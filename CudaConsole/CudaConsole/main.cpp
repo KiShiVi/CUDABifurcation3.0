@@ -112,7 +112,7 @@ int main()
 	//	new double[3] {0.2, 0.2, 5.7}, // const double* values,
 	//	3); // const int amountOfValues);
 
-LLE1D(
+LS2D(
 		4000, // const double tMax,
 		0.4, // const double NT,
 		100, // const int nPts,
@@ -120,8 +120,8 @@ LLE1D(
 		1e-5, // const double eps,
 		new double[3] { 0.1, 0.1, 0.1 }, // const double* initialConditions,
 		3, // const int amountOfInitialConditions,
-		new double[2] {0.05, 0.35}, // const double* ranges,
-		new int[1] {0}, // const int* indicesOfMutVars,
+		new double[4] {0.05, 0.35, 0.05, 0.35}, // const double* ranges,
+		new int[2] {0, 1}, // const int* indicesOfMutVars,
 		0, // const int writableVar,
 		1000000, // const double maxValue,
 		100, // const double transientTime,

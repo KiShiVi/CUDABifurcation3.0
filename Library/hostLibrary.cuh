@@ -6,6 +6,7 @@
 #include "cudaMacros.cuh"
 #include "cudaLibrary.cuh"
 #include <iomanip>
+#include <string>
 
 /**
  * Construction of a 1D bifurcation diagram
@@ -425,6 +426,44 @@ __host__ void LLE2DIC(
  * \return -
  */
 __host__ void LS1D(
+	const double tMax,
+	const double NT,
+	const int nPts,
+	const double h,
+	const double eps,
+	const double* initialConditions,
+	const int amountOfInitialConditions,
+	const double* ranges,
+	const int* indicesOfMutVars,
+	const int writableVar,
+	const double maxValue,
+	const double transientTime,
+	const double* values,
+	const int amountOfValues);
+
+
+
+
+/**
+ * Construction of a 2D LS diagram
+ *
+ * \param tMax - Simulation time
+ * \param NT - Normalization time
+ * \param nPts - Resolution
+ * \param h - Integration step
+ * \param eps - Eps
+ * \param initialConditions - Array of initial conditions
+ * \param amountOfInitialConditions - Amount of initial conditions
+ * \param ranges - Array with variable parameter ranges
+ * \param indicesOfMutVars - Index of unknown variable
+ * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
+ * \param maxValue - Threshold signal level
+ * \param transientTime - Transient time
+ * \param values - Array of parameters
+ * \param amountOfValues - Amount of Parameters
+ * \return -
+ */
+__host__ void LS2D(
 	const double tMax,
 	const double NT,
 	const int nPts,
