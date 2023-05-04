@@ -175,6 +175,46 @@ __host__ void bifurcation2DDBSCAN(
 
 
 /**
+ * Construction of a 2D bifurcation diagram (with the metric DBSCAN)
+ *
+ * \param tMax - Simulation time
+ * \param nPts - Resolution
+ * \param h - Integration step
+ * \param amountOfInitialConditions - Amount of initial conditions
+ * \param initialConditions - Array of initial conditions
+ * \param ranges - Array with variable parameter ranges
+ * \param indicesOfMutVars - Index of unknown variable
+ * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
+ * \param maxValue - Threshold signal level
+ * \param maxAmountOfPeaks - Maximum Peak Threshold
+ * \param transientTime - Transient time
+ * \param values - Array of parameters
+ * \param amountOfValues - Amount of Parameters
+ * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
+ * \param eps - eps for DBSCAN
+ * \return -
+ */
+__host__ void calculationOfPeriodicityByOstrovsky(
+	const double tMax,
+	const int nPts,
+	const double h,
+	const int amountOfInitialConditions,
+	const double* initialConditions,
+	const double* ranges,
+	const int* indicesOfMutVars,
+	const int writableVar,
+	const double maxValue,
+	const int maxAmountOfPeaks,
+	const double transientTime,
+	const double* values,
+	const int amountOfValues,
+	const int preScaller,
+	const double eps,
+	const double ostrovskyThreshold);
+
+
+
+/**
  * Construction of a 2D bifurcation diagram (with the metric KDE for initial conditions)
  * 
  * \param tMax - Simulation time

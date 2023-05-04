@@ -223,6 +223,23 @@ __global__ void peakFinderCUDA(double* data, const int sizeOfBlock, const int am
 
 
 /**
+ * Finds peaks in the "data" array in multi-threaded mode.
+ * The result is written to outPeaks, timeOfPeaks ans amountOfPeaks(if outPeaks != nullptr and timeOfPeaks != nullptr and amountOfPeaks != nullptr)
+ *
+ * \param data - data
+ * \param sizeOfBlock - Size of one memory block in "data" array
+ * \param amountOfBlocks - Amount of blocks in "data" array.
+ * \param amountOfPeaks - Out Array for mem amount of found peaks
+ * \param outPeaks - Out array for value of found peaks
+ * \param timeOfPeaks - Out array for indices of found peaks
+ * \return
+ */
+__global__ void peakFinderCUDAForCalculationOfPeriodicityByOstrovsky(double* data, const int sizeOfBlock, const int amountOfBlocks,
+	int* amountOfPeaks, double* outPeaks, double* timeOfPeaks, bool* flags, double ostrovskyThreshold);
+
+
+
+/**
  * Metric KDE
  * 
  * \param data - data
@@ -297,6 +314,27 @@ __device__ __host__ int dbscan(double* data, double* intervals, double* helpfulA
 
 
 /**
+ * Metric DBSCAN
+ *
+ * \param data - data
+ * \param intervals - Array with values of interpeak intervals
+ * \param helpfulArray - Auxiliary array
+ * \param startDataIndex - Starting index of writing to data
+ * \param amountOfPeaks - Out Array for mem amount of found peaks
+ * \param sizeOfHelpfulArray - Size of auxiliary array
+ * \param maxAmountOfPeaks - Maximum Peak Threshold
+ * \param idx - Current idx in thread
+ * \param eps - Eps
+ * \param outData - Result array
+ * \return - Result of DBSCAN
+ */
+__device__ __host__ double dbscanDouble(double* data, double* intervals, double* helpfulArray,
+	const int startDataIndex, const int amountOfPeaks, const int sizeOfHelpfulArray,
+	const int maxAmountOfPeaks, const int idx, const double eps, double* outData);
+
+
+
+/**
  * Kernel for metric DBSCAN
  * 
  * \param data - data
@@ -313,6 +351,27 @@ __device__ __host__ int dbscan(double* data, double* intervals, double* helpfulA
 __global__ void dbscanCUDA(double* data, const int sizeOfBlock, const int amountOfBlocks,
 	const int* amountOfPeaks, double* intervals, double* helpfulArray,
 	const int maxAmountOfPeaks, const double eps, int* outData);
+
+
+
+/**
+ * Kernel for metric DBSCAN
+ *
+ * \param data - data
+ * \param sizeOfBlock - Size of one memory block in "data" array
+ * \param amountOfBlocks - Amount of blocks in "data" array.
+ * \param amountOfPeaks - Out Array for mem amount of found peaks
+ * \param intervals - Array with values of interpeak intervals
+ * \param helpfulArray - Auxiliary array
+ * \param maxAmountOfPeaks - Maximum Peak Threshold
+ * \param eps - Eps
+ * \param outData - Result array
+ * \return -
+ */
+__global__ void dbscanCUDAForCalculationOfPeriodicityByOstrovsky(double* data, const int sizeOfBlock, const int amountOfBlocks,
+	const int* amountOfPeaks, double* intervals, double* helpfulArray,
+	const int maxAmountOfPeaks, const double eps, double* outData, bool* flags);
+
 
 
 /**

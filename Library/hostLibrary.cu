@@ -744,6 +744,187 @@ __host__ void bifurcation2DDBSCAN(
 
 
 
+__host__ void calculationOfPeriodicityByOstrovsky(
+	const double tMax,
+	const int nPts,
+	const double h,
+	const int amountOfInitialConditions,
+	const double* initialConditions,
+	const double* ranges,
+	const int* indicesOfMutVars,
+	const int writableVar,
+	const double maxValue,
+	const int maxAmountOfPeaks,
+	const double transientTime,
+	const double* values,
+	const int amountOfValues,
+	const int preScaller,
+	const double eps,
+	const double ostrovskyThreshold)
+{
+	int amountOfPointsInBlock = tMax / h / preScaller;
+	int amountOfPointsForSkip = transientTime / h;
+
+	size_t freeMemory;
+	size_t totalMemory;
+
+	gpuErrorCheck(cudaMemGetInfo(&freeMemory, &totalMemory));
+
+	// TODO find optimal memorySize for this function
+	freeMemory *= 0.95;
+	size_t nPtsLimiter = freeMemory / (sizeof(double) * amountOfPointsInBlock * 6);
+
+	//HERE YOU MAY DEFINE CUSTOM nPtsLimiter IF PROGRAM THROWS THE EXCEPTION OF MEMORY
+	//nPtsLimiter = 100000;
+
+	nPtsLimiter = nPtsLimiter > (nPts * nPts) ? (nPts * nPts) : nPtsLimiter;
+
+	size_t originalNPtsLimiter = nPtsLimiter;
+
+	double* h_dbscanResult = new double[nPtsLimiter * sizeof(double)];
+
+	double* d_data;
+	double* d_ranges;
+	int* d_indicesOfMutVars;
+	double* d_initialConditions;
+	double* d_values;
+
+	int* d_amountOfPeaks;
+	double* d_intervals;
+	double* d_dbscanResult;
+	double* d_helpfulArray;
+	bool* d_flags;
+
+	gpuErrorCheck(cudaMalloc((void**)&d_data, nPtsLimiter * amountOfPointsInBlock * sizeof(double)));
+	gpuErrorCheck(cudaMalloc((void**)&d_ranges, 4 * sizeof(double)));
+	gpuErrorCheck(cudaMalloc((void**)&d_indicesOfMutVars, 2 * sizeof(int)));
+	gpuErrorCheck(cudaMalloc((void**)&d_initialConditions, amountOfInitialConditions * sizeof(double)));
+	gpuErrorCheck(cudaMalloc((void**)&d_values, amountOfValues * sizeof(double)));
+
+	gpuErrorCheck(cudaMalloc((void**)&d_amountOfPeaks, nPtsLimiter * sizeof(int)));
+	gpuErrorCheck(cudaMalloc((void**)&d_intervals, nPtsLimiter * amountOfPointsInBlock * sizeof(double)));
+	gpuErrorCheck(cudaMalloc((void**)&d_dbscanResult, nPtsLimiter * sizeof(double)));
+	gpuErrorCheck(cudaMalloc((void**)&d_helpfulArray, nPtsLimiter * amountOfPointsInBlock * sizeof(double)));
+	gpuErrorCheck(cudaMalloc((void**)&d_flags, 5 * nPtsLimiter * sizeof(bool)));
+
+	gpuErrorCheck(cudaMemcpy(d_ranges, ranges, 4 * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
+	gpuErrorCheck(cudaMemcpy(d_indicesOfMutVars, indicesOfMutVars, 2 * sizeof(int), cudaMemcpyKind::cudaMemcpyHostToDevice));
+	gpuErrorCheck(cudaMemcpy(d_initialConditions, initialConditions, amountOfInitialConditions * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
+	gpuErrorCheck(cudaMemcpy(d_values, values, amountOfValues * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
+
+
+	size_t amountOfIteration = (size_t)ceilf((double)nPts * (double)nPts / (double)nPtsLimiter);
+
+	std::ofstream outFileStream;
+	outFileStream.open(OUT_FILE_PATH);
+
+#ifdef DEBUG
+	printf("BIFURCATION2D\n");
+	printf("free memory: %zu\n", freeMemory);
+	printf("nPtsLimiter : %zu\n", nPtsLimiter);
+	printf("Amount of iterations %zu: \n", amountOfIteration);
+#endif
+
+	if (outFileStream.is_open())
+	{
+		outFileStream << ranges[0] << " " << ranges[1] << "\n";
+		outFileStream << ranges[2] << " " << ranges[3] << "\n";
+	}
+
+	int stringCounter = 0;
+	for (int i = 0; i < amountOfIteration; ++i)
+	{
+		if (i == amountOfIteration - 1)
+			nPtsLimiter = (nPts * nPts) - (nPtsLimiter * i);
+
+		int blockSize;
+		int minGridSize;
+		int gridSize;
+
+		//cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, calculateDiscreteModelCUDA, (amountOfInitialConditions + amountOfValues) * sizeof(double), nPtsLimiter);
+		//gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+
+		// TODO - this int change to GetSharedMemPerBlock() 
+		blockSize = 32000 / ((amountOfInitialConditions + amountOfValues) * sizeof(double));
+		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+
+		calculateDiscreteModelICCUDA << <gridSize, blockSize, (amountOfInitialConditions + amountOfValues) * sizeof(double)* blockSize >> > (
+			nPts, nPtsLimiter, amountOfPointsInBlock,
+			i * originalNPtsLimiter, amountOfPointsForSkip,
+			2, d_ranges, h,
+			d_indicesOfMutVars, d_initialConditions,
+			amountOfInitialConditions, d_values, amountOfValues,
+			amountOfPointsInBlock, preScaller,
+			writableVar, maxValue, d_data, d_amountOfPeaks);
+
+		gpuGlobalErrorCheck();
+
+		gpuErrorCheck(cudaDeviceSynchronize());
+
+
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, peakFinderCUDAForCalculationOfPeriodicityByOstrovsky, 0, nPtsLimiter);
+		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+
+		peakFinderCUDAForCalculationOfPeriodicityByOstrovsky << <gridSize, blockSize >> > (d_data, amountOfPointsInBlock, nPtsLimiter,
+			d_amountOfPeaks, d_data, d_intervals, d_flags, ostrovskyThreshold);
+
+		gpuGlobalErrorCheck();
+
+		gpuErrorCheck(cudaDeviceSynchronize());
+
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, dbscanCUDAForCalculationOfPeriodicityByOstrovsky, 0, nPtsLimiter);
+		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+
+		dbscanCUDAForCalculationOfPeriodicityByOstrovsky << <gridSize, blockSize >> > (d_data, amountOfPointsInBlock, nPtsLimiter,
+			d_amountOfPeaks, d_intervals, d_helpfulArray, maxAmountOfPeaks, eps, d_dbscanResult, d_flags);
+
+		gpuGlobalErrorCheck();
+
+		gpuErrorCheck(cudaDeviceSynchronize());
+
+		gpuErrorCheck(cudaMemcpy(h_dbscanResult, d_dbscanResult, nPtsLimiter * sizeof(double), cudaMemcpyKind::cudaMemcpyDeviceToHost));
+
+		for (size_t i = 0; i < nPtsLimiter; ++i)
+			if (outFileStream.is_open())
+			{
+				if (stringCounter != 0)
+					outFileStream << ", ";
+				if (stringCounter == nPts)
+				{
+					outFileStream << "\n";
+					stringCounter = 0;
+				}
+				outFileStream << h_dbscanResult[i];
+				++stringCounter;
+			}
+			else
+			{
+				printf("\nOutput file open error\n");
+				exit(1);
+			}
+
+#ifdef DEBUG
+		printf("Progress: %f\%\n", (100.0f / (double)amountOfIteration) * (i + 1));
+#endif
+	}
+
+	gpuErrorCheck(cudaFree(d_data));
+	gpuErrorCheck(cudaFree(d_ranges));
+	gpuErrorCheck(cudaFree(d_indicesOfMutVars));
+	gpuErrorCheck(cudaFree(d_initialConditions));
+	gpuErrorCheck(cudaFree(d_values));
+
+	gpuErrorCheck(cudaFree(d_amountOfPeaks));
+	gpuErrorCheck(cudaFree(d_intervals));
+	gpuErrorCheck(cudaFree(d_dbscanResult));
+	gpuErrorCheck(cudaFree(d_helpfulArray));
+	gpuErrorCheck(cudaFree(d_flags));
+
+	delete[] h_dbscanResult;
+}
+
+
+
 __host__ void bifurcation2DKDEIC(
 	const double tMax,
 	const int nPts,

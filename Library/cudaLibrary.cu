@@ -12,9 +12,35 @@ __device__ __host__ void calculateDiscreteModel(double* x, const double* a, cons
 	 * values[3] - C
 	 */
 
-	x[0] = x[0] + h * (-x[1] - x[2]);
-	x[1] = x[1] + h * (x[0] + a[0] * x[1]);
-	x[2] = x[2] + h * (a[1] + x[2] * (x[0] - a[2]));
+	//x[0] = x[0] + h * (-x[1] - x[2]);
+	//x[1] = x[1] + h * (x[0] + a[0] * x[1]);
+	//x[2] = x[2] + h * (a[1] + x[2] * (x[0] - a[2]));
+
+	float y[5], k;
+
+	k = h * a[7];
+
+	x[4] = x[4] + k * (x[0]);
+	x[3] = x[3] + k * (-a[2] * x[1] - a[3] * x[3]);
+	x[2] = x[2] + k * (a[1] * (x[1] - x[0] - x[2]));
+	x[1] = x[1] + k * (-x[2] + x[3]);
+	x[0] = x[0] + k * (a[0] * (x[2] - (a[4] + a[5] + a[6] * abs(x[4])) * x[0]));
+
+
+	y[0] = x[0];
+	y[1] = x[1];
+	y[2] = x[2];
+	y[3] = x[3];
+	y[4] = x[4];
+
+	double h1 = h * (1 - a[7]);
+
+
+	x[0] = (y[0] + h1 * (a[0] * x[2])) / (1 + h1 * a[0] * (a[4] + a[5] + a[6] * abs(x[4])));
+	x[1] = y[1] + h1 * (-x[2] + x[3]);
+	x[2] = (y[2] + h1 * (a[1] * (x[1] - x[0]))) / (1 + h1 * a[1]);
+	x[3] = (y[3] + h1 * (-a[2] * x[1])) / (1 + h1 * a[3]);
+	x[4] = y[4] + h1 * (x[0]);
 }
 
 
@@ -259,6 +285,74 @@ __global__ void peakFinderCUDA(double* data, const int sizeOfBlock, const int am
 
 
 
+__global__ void peakFinderCUDAForCalculationOfPeriodicityByOstrovsky(double* data, const int sizeOfBlock, const int amountOfBlocks,
+	int* amountOfPeaks, double* outPeaks, double* timeOfPeaks, bool* flags, double ostrovskyThreshold)
+{
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx >= amountOfBlocks)
+		return;
+
+	if (amountOfPeaks[idx] == -1)
+	{
+		amountOfPeaks[idx] = 0;
+		flags[idx * 5 + 3] = true;
+		return;
+	}
+
+	double lastPoint = data[idx * sizeOfBlock + sizeOfBlock - 1];
+
+	amountOfPeaks[idx] = peakFinder(data, idx * sizeOfBlock, sizeOfBlock, outPeaks, timeOfPeaks);
+
+	//FIRST CONDITION
+	flags[idx * 5 + 0] = true;
+	for (int i = idx * sizeOfBlock + 1; i < idx * sizeOfBlock + amountOfPeaks[idx]; ++i)
+	{
+		if (outPeaks[i] - outPeaks[i - 1] > 0)
+		{
+			flags[idx * 5 + 0] = false;
+			break;
+		}
+	}
+
+	//SECOND & THIRD CONDITION
+	bool flagOne = false;
+	bool flagZero = false;
+	for (int i = idx * sizeOfBlock + 1; i < idx * sizeOfBlock + amountOfPeaks[idx]; ++i)
+	{
+		if (outPeaks[i] > ostrovskyThreshold)
+			flagOne = true;
+		else
+			flagZero = true;
+		if (flagOne && flagZero)
+			break;
+	}
+
+	if (flagOne && flagZero)
+		flags[idx * 5 + 1] = true;
+	else
+		flags[idx * 5 + 1] = false;
+
+	if (flagOne && !flagZero)
+		flags[idx * 5 + 2] = false;
+	else
+		flags[idx * 5 + 2] = true;
+
+	//FOUR CONDITION
+	if (amountOfPeaks[idx] == 0 || amountOfPeaks[idx] == 1)
+		flags[idx * 5 + 3] = true;
+	else
+		flags[idx * 5 + 3] = false;
+
+	//FIVE CONDITION
+	if (lastPoint > ostrovskyThreshold)
+		flags[idx * 5 + 4] = true;
+	else
+		flags[idx * 5 + 4] = false;
+	return;
+}
+
+
+
 __device__ __host__ int kde(double* data, const int startDataIndex, const int amountOfPoints,
 	int maxAmountOfPeaks, int kdeSampling, double kdeSamplesInterval1,
 	double kdeSamplesInterval2, double kdeSmoothH)
@@ -436,6 +530,82 @@ __device__ __host__ int dbscan(double* data, double* intervals, double* helpfulA
 
 
 
+__device__ __host__ double dbscanDouble(double* data, double* intervals, double* helpfulArray,
+	const int startDataIndex, const int amountOfPeaks, const int sizeOfHelpfulArray,
+	const int maxAmountOfPeaks, const int idx, const double eps, double* outData)
+{
+	if (amountOfPeaks <= 0)
+	{
+		//outData[idx] = 0;
+		return 0;
+	}
+
+	if (amountOfPeaks == 1)
+	{
+		//outData[idx] = 1;
+		return 1;
+	}
+
+
+	if (amountOfPeaks > maxAmountOfPeaks)
+	{
+		//outData[idx] = 0; // Idk.. Maybe '0' need change to 'maxAmountOfPeaks'
+		return 0;
+	}
+
+	int cluster = 0;
+	int NumNeibor = 0;
+
+	for (int i = startDataIndex; i < startDataIndex + sizeOfHelpfulArray; ++i) {
+		helpfulArray[i] = 0;
+	}
+
+	for (int i = 0; i < amountOfPeaks; i++)
+		if (NumNeibor >= 1)
+		{
+			i = helpfulArray[startDataIndex + amountOfPeaks + NumNeibor - 1];
+			helpfulArray[startDataIndex + amountOfPeaks + NumNeibor - 1] = 0;
+			NumNeibor = NumNeibor - 1;
+			for (int k = 0; k < amountOfPeaks - 1; k++) {
+				if (i != k && helpfulArray[startDataIndex + k] == 0) {
+					//if (distance(input[index + i], input[index + i + 1], input[index + k], input[index + k + 1])<= eps) {
+					if (distance(data[startDataIndex + i], intervals[startDataIndex + i], data[startDataIndex + k], intervals[startDataIndex + k]) < eps) {
+						helpfulArray[startDataIndex + k] = cluster;
+						helpfulArray[startDataIndex + amountOfPeaks + k] = k;
+						++NumNeibor;
+					}
+				}
+			}
+		}
+		else if (helpfulArray[startDataIndex + i] == 0) {
+			NumNeibor = 0;
+			++cluster;
+			helpfulArray[startDataIndex + i] = cluster;
+			for (int k = 0; k < amountOfPeaks - 1; k++) {
+				if (i != k && helpfulArray[startDataIndex + k] == 0) {
+					//if (distance(input[index + i], input[index + i + 1], input[index + k], input[index + k + 1])<= eps) {
+					if (distance(data[startDataIndex + i], intervals[startDataIndex + i], data[startDataIndex + k], intervals[startDataIndex + k]) < eps) {
+						helpfulArray[startDataIndex + k] = cluster;
+						helpfulArray[startDataIndex + amountOfPeaks + k] = k;
+						++NumNeibor;
+					}
+				}
+			}
+		}
+	//for (int i = 0; i < amountOfPeaks; i++) {
+
+	//}
+	//for (int i = index + amountOfPeaks * 2; i < index + amountOfPeaks * 4; i++) {
+	//	input[i] = 0;
+	//}
+
+	//outData[idx] = cluster;
+
+	return cluster - 1; // cluster;
+}
+
+
+
 __global__ void dbscanCUDA(double* data, const int sizeOfBlock, const int amountOfBlocks,
 	const int* amountOfPeaks, double* intervals, double* helpfulArray,
 	const int maxAmountOfPeaks, const double eps, int* outData)
@@ -451,6 +621,44 @@ __global__ void dbscanCUDA(double* data, const int sizeOfBlock, const int amount
 	}
 	outData[idx] = dbscan(data, intervals, helpfulArray, idx * sizeOfBlock, amountOfPeaks[idx], sizeOfBlock, 
 		maxAmountOfPeaks, idx, eps, outData);
+}
+
+
+
+__global__ void dbscanCUDAForCalculationOfPeriodicityByOstrovsky(double* data, const int sizeOfBlock, const int amountOfBlocks,
+	const int* amountOfPeaks, double* intervals, double* helpfulArray,
+	const int maxAmountOfPeaks, const double eps, double* outData, bool* flags)
+{
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx >= amountOfBlocks)
+		return;
+
+	if (amountOfPeaks[idx] == -1)
+	{
+		outData[idx] = 0;
+		return;
+	}
+	outData[idx] = dbscanDouble(data, intervals, helpfulArray, idx * sizeOfBlock, amountOfPeaks[idx], sizeOfBlock,
+		maxAmountOfPeaks, idx, eps, outData);
+
+	if (flags[idx * 5 + 2])
+		outData[idx] = -1 * outData[idx];
+
+	if (flags[idx * 5 + 3])
+		outData[idx] = flags[4] ? 1 : -1;
+
+	if (flags[idx * 5 + 1])
+		outData[idx] = 0;
+
+	if (flags[idx * 5 + 0])
+	{
+		if (outData[idx] > 0)
+			outData[idx] = 0.5;
+		else if (outData[idx] == 0)
+			outData[idx] = 0;
+		else
+			outData[idx] = -0.5;
+	}
 }
 
 

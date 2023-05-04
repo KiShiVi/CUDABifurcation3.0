@@ -112,21 +112,39 @@ int main()
 	//	new double[3] {0.2, 0.2, 5.7}, // const double* values,
 	//	3); // const int amountOfValues);
 
-LS2D(
-		4000, // const double tMax,
-		0.4, // const double NT,
-		100, // const int nPts,
-		0.01, // const double h,
-		1e-5, // const double eps,
-		new double[3] { 0.1, 0.1, 0.1 }, // const double* initialConditions,
-		3, // const int amountOfInitialConditions,
-		new double[4] {0.05, 0.35, 0.05, 0.35}, // const double* ranges,
-		new int[2] {0, 1}, // const int* indicesOfMutVars,
-		0, // const int writableVar,
-		1000000, // const double maxValue,
-		100, // const double transientTime,
-		new double[3] {0.2, 0.2, 5.7}, // const double* values,
-		3); // const int amountOfValues);
+calculationOfPeriodicityByOstrovsky(
+	100,
+	300,
+	0.005,
+	5,
+	new double[5] { 0.001, 0, 0, 0, 0 },
+	new double[4] { -6, 6, -15, 15 },
+	new int[2] { 4, 3 },
+	4,
+	10000000,
+	10000000,
+	100,
+	new double[8] { 8, 35, 15, 0.01, -1.6676, 0.0676, 0.3682, 0.5 },
+	8,
+	1,
+	0.02,
+	2);
+
+//LS2D(
+//		800, // const double tMax,
+//		0.4, // const double NT,
+//		500, // const int nPts,
+//		0.01, // const double h,
+//		1e-5, // const double eps,
+//		new double[3] { 0.1, 0.1, 0.1 }, // const double* initialConditions,
+//		3, // const int amountOfInitialConditions,
+//		new double[4] {0.05, 0.35, 0.05, 0.35}, // const double* ranges,
+//		new int[2] {0, 1}, // const int* indicesOfMutVars,
+//		0, // const int writableVar,
+//		1000000, // const double maxValue,
+//		2000, // const double transientTime,
+//		new double[3] {0.2, 0.2, 5.7}, // const double* values,
+//		3); // const int amountOfValues);
 
 	//modelingOneSystemDenis(
 	//	1000,
