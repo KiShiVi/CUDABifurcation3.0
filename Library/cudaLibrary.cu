@@ -645,7 +645,7 @@ __global__ void dbscanCUDAForCalculationOfPeriodicityByOstrovsky(double* data, c
 		outData[idx] = -1 * outData[idx];
 
 	if (flags[idx * 5 + 3])
-		outData[idx] = flags[4] ? 1 : -1;
+		outData[idx] = flags[idx * 5 + 4] ? 1 : -1;
 
 	if (flags[idx * 5 + 1])
 		outData[idx] = 0;
