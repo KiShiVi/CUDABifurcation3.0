@@ -43,6 +43,19 @@ __host__ void bifurcation1D(
 
 
 
+/**
+ * New modeling method with step offset
+ *
+ * \param tMax - Simulation time
+ * \param h - Integration step
+ * \param hSpecial - Offset step
+ * \param amountOfInitialConditions - Amount of initial conditions
+ * \param initialConditions - Array of initial conditions
+ * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
+ * \param values - Array of parameters
+ * \param amountOfValues - Amount of Parameters
+ * \return -
+ */
 __host__ void modelingOneSystemDenis(
 	const double tMax,
 	const double h,
@@ -175,7 +188,7 @@ __host__ void bifurcation2DDBSCAN(
 
 
 /**
- * Construction of a 2D bifurcation diagram (with the metric DBSCAN)
+ * Some bullshit with attraction pools for Ostrovsky
  *
  * \param tMax - Simulation time
  * \param nPts - Resolution
@@ -192,6 +205,7 @@ __host__ void bifurcation2DDBSCAN(
  * \param amountOfValues - Amount of Parameters
  * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
  * \param eps - eps for DBSCAN
+ * \param ostrovskyThreshold - ostrovskyThreshold
  * \return -
  */
 __host__ void calculationOfPeriodicityByOstrovsky(
