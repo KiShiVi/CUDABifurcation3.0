@@ -92,6 +92,7 @@ __host__ void bifurcation1D(
 		//gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
 
 		blockSize = 24000 / ((amountOfInitialConditions + amountOfValues) * sizeof(double));
+		//!!!!!!!!!!!!IF BLOCKSIZE > NPTS, THEN NPTS
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
 
 		calculateDiscreteModelCUDA << <gridSize, blockSize, (amountOfInitialConditions + amountOfValues) * sizeof(double)* blockSize >> > (
