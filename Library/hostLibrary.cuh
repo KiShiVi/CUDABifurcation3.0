@@ -1,314 +1,111 @@
 #pragma once
 
+// -----------------------
+// --- Библиотеки CUDA ---
+// -----------------------
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+// -----------------------
+
+// --------------------------------------------
+// --- KiShiVi библиотеки для работы с CUDA ---
+// --------------------------------------------
 
 #include "cudaMacros.cuh"
 #include "cudaLibrary.cuh"
+
+// --------------------------------------------
+
+// -----------------------------
+// --- Встроенные библиотеки ---
+// -----------------------------
+
 #include <iomanip>
 #include <string>
 
+// -----------------------------
+
+
 /**
- * Construction of a 1D bifurcation diagram
- * 
- * \param tMax - Simulation time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \return -
+ * Функция, для расчета одномерной бифуркационной диаграммы.
  */
 __host__ void bifurcation1D(
-	const double tMax,
-	const int nPts,
-	const double h,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues,
-	const int preScaller);
+	const double	tMax,							// Время моделирования системы
+	const int		nPts,							// Разрешение диаграммы
+	const double	h,								// Шаг интегрирования
+	const int		amountOfInitialConditions,		// Количество начальных условий ( уравнений в системе )
+	const double*	initialConditions,				// Массив с начальными условиями
+	const double*	ranges,							// Диапазон изменения переменной
+	const int*		indicesOfMutVars,				// Индекс изменяемой переменной в массиве values
+	const int		writableVar,					// Индекс уравнения, по которому будем строить диаграмму
+	const double	maxValue,						// Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double	transientTime,					// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,							// Параметры
+	const int		amountOfValues,					// Количество параметров
+	const int		preScaller);					// Множитель, который уменьшает время и объем расчетов (будет рассчитываться только каждая 'preScaller' точка)
 
 
 
 /**
- * New modeling method with step offset
- *
- * \param tMax - Simulation time
- * \param h - Integration step
- * \param hSpecial - Offset step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \return -
- */
-__host__ void modelingOneSystemDenis(
-	const double tMax,
-	const double h,
-	const double hSpecial,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const int writableVar,
-	const double* values,
-	const int amountOfValues);
-
-
-
-/**
- * Construction of a 1D bifurcation diagram (for initial conditions)
- * 
- * \param tMax - Simulation time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \return -
+ * Функция, для расчета одномерной бифуркационной диаграммы. (По начальным условиям)
  */
 __host__ void bifurcation1DIC(
-	const double tMax,
-	const int nPts,
-	const double h,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues,
-	const int preScaller);
+	const double	tMax,							  // Время моделирования системы
+	const int		nPts,							  // Разрешение диаграммы
+	const double	h,								  // Шаг интегрирования
+	const int		amountOfInitialConditions,		  // Количество начальных условий ( уравнений в системе )
+	const double*	initialConditions,				  // Массив с начальными условиями
+	const double*	ranges,							  // Диапазон изменения начального условия
+	const int*		indicesOfMutVars,				  // Индекс изменяемого начального условия
+	const int		writableVar,					  // Индекс уравнения, по которому будем строить диаграмму
+	const double	maxValue,						  // Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double	transientTime,					  // Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,							  // Параметры
+	const int		amountOfValues,					  // Количество параметров
+	const int		preScaller);					  // Множитель, который уменьшает время и объем расчетов (будет рассчитываться только каждая 'preScaller' точка)
 
 
 
 /**
- * Construction of a 2D bifurcation diagram (with the metric KDE)
- * 
- * \param tMax - Simulation time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param maxAmountOfPeaks - Maximum Peak Threshold
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \param in_kdeSampling - KDE Sampling
- * \param in_kdeSamplesInterval1 - KDE Samples Interval 1
- * \param in_kdeSamplesInterval2 - KDE Samples Interval 2
- * \param in_kdeSamplesSmooth  - KDE Samples Smooth
- * \return -
+ * Функция, для расчета двумерной бифуркационной диаграммы (DBSCAN)
  */
-__host__ void bifurcation2DKDE(
-	const double tMax,
-	const int nPts,
-	const double h,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const int maxAmountOfPeaks,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues,
-	const int preScaller,
-	const int in_kdeSampling,
-	const double in_kdeSamplesInterval1,
-	const double in_kdeSamplesInterval2,
-	const double in_kdeSamplesSmooth);
+__host__ void bifurcation2D(
+	const double	tMax,								// Время моделирования системы
+	const int		nPts,								// Разрешение диаграммы
+	const double	h,									// Шаг интегрирования
+	const int		amountOfInitialConditions,			// Количество начальных условий ( уравнений в системе )
+	const double*	initialConditions,					// Массив с начальными условиями
+	const double*	ranges,								// Диапазоны изменения параметров
+	const int*		indicesOfMutVars,					// Индексы изменяемых параметров
+	const int		writableVar,						// Индекс уравнения, по которому будем строить диаграмму
+	const double	maxValue,							// Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double	transientTime,						// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,								// Параметры
+	const int		amountOfValues,						// Количество параметров
+	const int		preScaller,							// Множитель, который уменьшает время и объем расчетов (будет рассчитываться только каждая 'preScaller' точка)
+	const double	eps);								// Эпсилон для алгоритма DBSCAN 
 
 
 
 /**
- * Construction of a 2D bifurcation diagram (with the metric DBSCAN)
- * 
- * \param tMax - Simulation time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param maxAmountOfPeaks - Maximum Peak Threshold
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \param eps - eps for DBSCAN
- * \return -
+ * Функция, для расчета двумерной бифуркационной диаграммы (DBSCAN) (for initial conditions)
  */
-__host__ void bifurcation2DDBSCAN(
-	const double tMax,
-	const int nPts,
-	const double h,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const int maxAmountOfPeaks,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues,
-	const int preScaller,
-	const double eps);
-
-
-
-/**
- * Some bullshit with attraction pools for Ostrovsky
- *
- * \param tMax - Simulation time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param maxAmountOfPeaks - Maximum Peak Threshold
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \param eps - eps for DBSCAN
- * \param ostrovskyThreshold - ostrovskyThreshold
- * \return -
- */
-__host__ void calculationOfPeriodicityByOstrovsky(
-	const double tMax,
-	const int nPts,
-	const double h,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const int maxAmountOfPeaks,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues,
-	const int preScaller,
-	const double eps,
-	const double ostrovskyThreshold);
-
-
-
-/**
- * Construction of a 2D bifurcation diagram (with the metric KDE for initial conditions)
- * 
- * \param tMax - Simulation time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param maxAmountOfPeaks - Maximum Peak Threshold
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \param in_kdeSampling - KDE Sampling
- * \param in_kdeSamplesInterval1 - KDE Samples Interval 1
- * \param in_kdeSamplesInterval2 - KDE Samples Interval 2
- * \param in_kdeSamplesSmooth - KDE Samples Smooth
- * \return -
- */
-__host__ void bifurcation2DKDEIC(
-	const double tMax,
-	const int nPts,
-	const double h,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const int maxAmountOfPeaks,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues,
-	const int preScaller,
-	const int in_kdeSampling,
-	const double in_kdeSamplesInterval1,
-	const double in_kdeSamplesInterval2,
-	const double in_kdeSamplesSmooth);
-
-
-
-/**
- * Construction of a 2D bifurcation diagram (with the metric DBSCAN for initial conditions)
- * 
- * \param tMax - Simulation time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param initialConditions - Array of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param maxAmountOfPeaks - Maximum Peak Threshold
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \param eps - eps for DBSCAN
- * \return -
- */
-__host__ void bifurcation2DDBSCANIC(
-	const double tMax,
-	const int nPts,
-	const double h,
-	const int amountOfInitialConditions,
-	const double* initialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const int maxAmountOfPeaks,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues,
-	const int preScaller,
-	const double eps);
+__host__ void bifurcation2DIC(
+	const double	tMax,								// Время моделирования системы
+	const int		nPts,								// Разрешение диаграммы
+	const double	h,									// Шаг интегрирования
+	const int		amountOfInitialConditions,			// Количество начальных условий ( уравнений в системе )
+	const double*	initialConditions,					// Массив с начальными условиями
+	const double*	ranges,								// Диапазоны изменения параметров
+	const int*		indicesOfMutVars,					// Индексы изменяемых параметров
+	const int		writableVar,						// Индекс уравнения, по которому будем строить диаграмму
+	const double	maxValue,							// Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double	transientTime,						// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,								// Параметры
+	const int		amountOfValues,						// Количество параметров
+	const int		preScaller,							// Множитель, который уменьшает время и объем расчетов (будет рассчитываться только каждая 'preScaller' точка)
+	const double	eps);								// Эпсилон для алгоритма DBSCAN 
 
 
 

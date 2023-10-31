@@ -112,24 +112,6 @@ int main()
 	//	new double[3] {0.2, 0.2, 5.7}, // const double* values,
 	//	3); // const int amountOfValues);
 
-calculationOfPeriodicityByOstrovsky(
-	100,
-	300,
-	0.005,
-	5,
-	new double[5] { 0.001, 0, 0, 0, 0 },
-	new double[4] { -6, 6, -15, 15 },
-	new int[2] { 4, 3 },
-	4,
-	10000000,
-	10000000,
-	100,
-	new double[8] { 8, 35, 15, 0.01, -1.6676, 0.0676, 0.3682, 0.5 },
-	8,
-	1,
-	0.02,
-	2);
-
 //LS2D(
 //		800, // const double tMax,
 //		0.4, // const double NT,
@@ -294,20 +276,20 @@ calculationOfPeriodicityByOstrovsky(
 	//	20,												 		// const double in_kdeSamplesInterval2,
 	//	0.05);											 		// const double in_kdeSamplesSmooth);
 
-	//bifurcation1D(									
-	//	100,													// const double tMax,
-	//	1000,													// const int nPts,
-	//	0.005,													// const double h,
-	//	3,														// const int amountOfInitialConditions,
-	//	new double[3] {0.3, 0.3, 0.1},							// const double* initialConditions,
-	//	new double[2] {-5, 6},								// const double* ranges,
-	//	new int[1] {0},											// const int* indicesOfMutVars,
-	//	0,														// const int writableVar,
-	//	100000,													// const double maxValue,
-	//	500,													// const double transientTime,
-	//	new double[4] {0.5, 10, 28, 2.3},						// const double* values,
-	//	4,														// const int amountOfValues,
-	//	1);														// const int preScaller);
+	bifurcation1D(									
+		100,													// const double tMax,
+		1000,													// const int nPts,
+		0.005,													// const double h,
+		3,														// const int amountOfInitialConditions,
+		new double[3] {0.3, 0.3, 0.1},							// const double* initialConditions,
+		new double[2] {-5, 6},								// const double* ranges,
+		new int[1] {0},											// const int* indicesOfMutVars,
+		0,														// const int writableVar,
+		100000,													// const double maxValue,
+		500,													// const double transientTime,
+		new double[4] {0.5, 10, 28, 2.3},						// const double* values,
+		4,														// const int amountOfValues,
+		1);														// const int preScaller);
 
 	//LLE1D(
 	//	10000,													// const double tMax,
