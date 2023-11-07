@@ -250,104 +250,104 @@ __global__ void dbscanCUDA(double* data, const int sizeOfBlock, const int amount
 
 
 /**
- * Kernel for metric LLE
+ * Ядро для LLE
  * 
- * \param nPts - Amount of points
- * \param nPtsLimiter - Amount of points in one calculating
- * \param NT - Normalization time
- * \param tMax - Simulation time
- * \param sizeOfBlock - Size of one memory block in "data" array
- * \param amountOfCalculatedPoints - Amount of calculated points
- * \param amountOfPointsForSkip	- Amount of points for skip (depends on transit time)
- * \param dimension - Calculating dimension
- * \param ranges - Array with variable parameter ranges
- * \param h - Integration step
- * \param eps - Eps
- * \param indicesOfMutVars - Index of unknown variable
- * \param initialConditions - Array of initial conditions
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param amountOfIterations - Amount of iterations (nearly tMax)
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \param writableVar - Which variable from x[] will be written to the date
- * \param maxValue - Threshold signal level
- * \param resultArray - Result array
+ * \param nPts						- Общее разрешение
+ * \param nPtsLimiter				- Разрешение в текущем расчете
+ * \param NT						- Время нормализации
+ * \param tMax						- Время моделирования
+ * \param sizeOfBlock				- Количество точек, занимаемое одной системой в "data"
+ * \param amountOfCalculatedPoints	- Количество уже посчитанных точек
+ * \param amountOfPointsForSkip		- Количество точек, которое будет промоделированно до основного расчета (transientTime)
+ * \param dimension					- Размерность
+ * \param ranges					- Массив, содержащий диапазоны перебираемого параметра
+ * \param h							- Шаг интегрирования
+ * \param eps						- Эпсилон
+ * \param indicesOfMutVars			- Индексы изменяемых параметров
+ * \param initialConditions			- Начальные условия
+ * \param amountOfInitialConditions - Количество начальных условий
+ * \param values					- Параметры
+ * \param amountOfValues			- Количество параметров
+ * \param amountOfIterations		- Количество итерация (вычисляется от tMax)
+ * \param preScaller				- Множитель для ускорения расчетов
+ * \param writableVar				- Индекс переменной в x[] по которому строим диаграмму
+ * \param maxValue					- Макксимальное значение переменной при моделировании
+ * \param resultArray				- Результирующий массив
  * \return -
  */
 __global__ void LLEKernelCUDA(
-	const int nPts,
-	const int nPtsLimiter,
-	const double NT,
-	const double tMax,
-	const int sizeOfBlock,
-	const int amountOfCalculatedPoints,
-	const int amountOfPointsForSkip,
-	const int dimension,
-	double* ranges,
-	const double h,
-	const double eps,
-	int* indicesOfMutVars,
-	double* initialConditions,
-	const int amountOfInitialConditions,
-	const double* values,
-	const int amountOfValues,
-	const int amountOfIterations,
-	const int preScaller = 0,
-	const int writableVar = 0,
-	const double maxValue = 0,
-	double* resultArray = nullptr);
+	const int		nPts,
+	const int		nPtsLimiter,
+	const double	NT,
+	const double	tMax,
+	const int		sizeOfBlock,
+	const int		amountOfCalculatedPoints,
+	const int		amountOfPointsForSkip,
+	const int		dimension,
+	double*			ranges,
+	const double	h,
+	const double	eps,
+	int*			indicesOfMutVars,
+	double*			initialConditions,
+	const int		amountOfInitialConditions,
+	const double*	values,
+	const int		amountOfValues,
+	const int		amountOfIterations,
+	const int		preScaller = 0,
+	const int		writableVar = 0,
+	const double	maxValue = 0,
+	double*			resultArray = nullptr);
 
 
 
 /**
- * Kernel for metric LLE (for initial conditions)
- * 
- * \param nPts - Amount of points
- * \param nPtsLimiter - Amount of points in one calculating
- * \param NT - Normalization time
- * \param tMax - Simulation time
- * \param sizeOfBlock - Size of one memory block in "data" array
- * \param amountOfCalculatedPoints - Amount of calculated points
- * \param amountOfPointsForSkip	- Amount of points for skip (depends on transit time)
- * \param dimension - Calculating dimension
- * \param ranges - Array with variable parameter ranges
- * \param h - Integration step
- * \param eps - Eps
- * \param indicesOfMutVars - Index of unknown variable
- * \param initialConditions - Array of initial conditions
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \param amountOfIterations - Amount of iterations (nearly tMax)
- * \param preScaller - Amount of skip points in system. Each 'preScaller' point will be written
- * \param writableVar - Which variable from x[] will be written to the date
- * \param maxValue - Threshold signal level
- * \param resultArray - Result array
+ * Ядро для LLE (IC)
+ *
+ * \param nPts						- Общее разрешение
+ * \param nPtsLimiter				- Разрешение в текущем расчете
+ * \param NT						- Время нормализации
+ * \param tMax						- Время моделирования
+ * \param sizeOfBlock				- Количество точек, занимаемое одной системой в "data"
+ * \param amountOfCalculatedPoints	- Количество уже посчитанных точек
+ * \param amountOfPointsForSkip		- Количество точек, которое будет промоделированно до основного расчета (transientTime)
+ * \param dimension					- Размерность
+ * \param ranges					- Массив, содержащий диапазоны перебираемого параметра
+ * \param h							- Шаг интегрирования
+ * \param eps						- Эпсилон
+ * \param indicesOfMutVars			- Индексы изменяемых параметров
+ * \param initialConditions			- Начальные условия
+ * \param amountOfInitialConditions - Количество начальных условий
+ * \param values					- Параметры
+ * \param amountOfValues			- Количество параметров
+ * \param amountOfIterations		- Количество итерация (вычисляется от tMax)
+ * \param preScaller				- Множитель для ускорения расчетов
+ * \param writableVar				- Индекс переменной в x[] по которому строим диаграмму
+ * \param maxValue					- Макксимальное значение переменной при моделировании
+ * \param resultArray				- Результирующий массив
  * \return -
  */
 __global__ void LLEKernelICCUDA(
-	const int nPts,
-	const int nPtsLimiter,
-	const double NT,
-	const double tMax,
-	const int sizeOfBlock,
-	const int amountOfCalculatedPoints,
-	const int amountOfPointsForSkip,
-	const int dimension,
-	double* ranges,
-	const double h,
-	const double eps,
-	int* indicesOfMutVars,
-	double* initialConditions,
-	const int amountOfInitialConditions,
-	const double* values,
-	const int amountOfValues,
-	const int amountOfIterations,
-	const int preScaller = 0,
-	const int writableVar = 0,
-	const double maxValue = 0,
-	double* resultArray = nullptr);
+	const int		nPts,
+	const int		nPtsLimiter,
+	const double	NT,
+	const double	tMax,
+	const int		sizeOfBlock,
+	const int		amountOfCalculatedPoints,
+	const int		amountOfPointsForSkip,
+	const int		dimension,
+	double*			ranges,
+	const double	h,
+	const double	eps,
+	int*			indicesOfMutVars,
+	double*			initialConditions,
+	const int		amountOfInitialConditions,
+	const double*	values,
+	const int		amountOfValues,
+	const int		amountOfIterations,
+	const int		preScaller = 0,
+	const int		writableVar = 0,
+	const double	maxValue = 0,
+	double*			resultArray = nullptr);
 
 
 

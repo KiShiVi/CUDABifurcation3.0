@@ -110,76 +110,44 @@ __host__ void bifurcation2DIC(
 
 
 /**
- * Construction of a 1D LLE diagram
- * 
- * \param tMax - Simulation time
- * \param NT - Normalization time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param eps - Eps
- * \param initialConditions - Array of initial conditions
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \return -
+ * Построение 1D LLE диаграммы
  */
 __host__ void LLE1D(
-	const double tMax,
-	const double NT,
-	const int nPts,
-	const double h,
-	const double eps,
-	const double* initialConditions,
-	const int amountOfInitialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues);
+	const double	tMax,								// Время моделирования системы
+	const double	NT,									// Время нормализации
+	const int		nPts,								// Разрешение диаграммы
+	const double	h,									// Шаг интегрирования
+	const double	eps,								// Эпсилон для LLE
+	const double*	initialConditions,					// Массив с начальными условиями
+	const int		amountOfInitialConditions,			// Количество начальных условий ( уравнений в системе )
+	const double*	ranges,								// Диапазоны изменения параметров
+	const int*		indicesOfMutVars,					// Индексы изменяемых параметров
+	const int		writableVar,						// Индекс уравнения, по которому будем строить диаграмму
+	const double	maxValue,							// Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double	transientTime,						// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,								// Параметры
+	const int		amountOfValues);					// Количество параметров
 
 
 
 /**
- * Construction of a 1D LLE diagram (for initial conditions)
- * 
- * \param tMax - Simulation time
- * \param NT - Normalization time
- * \param nPts - Resolution
- * \param h - Integration step
- * \param eps - Eps
- * \param initialConditions - Array of initial conditions
- * \param amountOfInitialConditions - Amount of initial conditions
- * \param ranges - Array with variable parameter ranges
- * \param indicesOfMutVars - Index of unknown variable
- * \param writableVar - Evaluation axis (X - 0, Y - 1, Z - 2)
- * \param maxValue - Threshold signal level
- * \param transientTime - Transient time
- * \param values - Array of parameters
- * \param amountOfValues - Amount of Parameters
- * \return -
+ * Построение 1D LLE диаграммы (IC)
  */
-__host__ void LLE1DIC(
-	const double tMax,
-	const double NT,
-	const int nPts,
-	const double h,
-	const double eps,
-	const double* initialConditions,
-	const int amountOfInitialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues);
+__host__ void LLE1DIC(			
+	const double tMax,									// Время моделирования системы
+	const double NT,									// Время нормализации
+	const int nPts,										// Разрешение диаграммы
+	const double h,										// Шаг интегрирования
+	const double eps,									// Эпсилон для LLE
+	const double* initialConditions,					// Массив с начальными условиями
+	const int amountOfInitialConditions,				// Количество начальных условий ( уравнений в системе )
+	const double* ranges,								// Диапазоны изменения параметров
+	const int* indicesOfMutVars,						// Индексы изменяемых параметров
+	const int writableVar,								// Индекс уравнения, по которому будем строить диаграмму
+	const double maxValue,								// Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double transientTime,							// Время, которое будет промоделировано перед расчетом диаграммы
+	const double* values,								// Параметры
+	const int amountOfValues);							// Количество параметров
 
 
 

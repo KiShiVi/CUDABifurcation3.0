@@ -2,7 +2,8 @@
 #include "hostLibrary.cuh"
 
 // --- Путь для сохранения результирующих файлов ---
-#define OUT_FILE_PATH "C:\\Users\\KiShiVi\\Desktop\\mat.csv"
+//#define OUT_FILE_PATH "C:\\Users\\KiShiVi\\Desktop\\mat.csv"
+#define OUT_FILE_PATH "C:\\CUDA\\mat.csv"
 
 // --- Директива, объявление которой выводит в консоль отладочные сообщения ---
 #define DEBUG
@@ -132,7 +133,7 @@ __host__ void bifurcation1D(
 		// --- Одному потоку в блоке требуется (amountOfInitialConditions + amountOfValues) * sizeof(double) байт ---
 		// --- Производим расчет, какое максимальное количество потоков в блоке мы можем обечпечить ---
 		// --- Учитваем, что в блоке не может быть больше 1024 потоков ---
-		blockSize = ceil( ( 1024.0f * 48.0f ) / ( ( amountOfInitialConditions + amountOfValues ) * sizeof( double ) ) );
+		blockSize = ceil( ( 1024.0f * 32.0f ) / ( ( amountOfInitialConditions + amountOfValues ) * sizeof( double ) ) );
 		if (blockSize < 1)
 		{
 #ifdef DEBUG
@@ -141,7 +142,7 @@ __host__ void bifurcation1D(
 #endif
 		}
 
-		blockSize = blockSize > 1024 ? 1024 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
+		blockSize = blockSize > 512 ? 512 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
 
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;	// Расчет размера сетки ( формула является аналогом ceil() )
 
@@ -382,7 +383,7 @@ __host__ void bifurcation1DIC(
 		// --- Одному потоку в блоке требуется (amountOfInitialConditions + amountOfValues) * sizeof(double) байт ---
 		// --- Производим расчет, какое максимальное количество потоков в блоке мы можем обечпечить ---
 		// --- Учитваем, что в блоке не может быть больше 1024 потоков ---
-		blockSize = ceil( ( 1024.0f * 48.0f ) / ( ( amountOfInitialConditions + amountOfValues ) * sizeof( double ) ) );
+		blockSize = ceil( ( 1024.0f * 32.0f ) / ( ( amountOfInitialConditions + amountOfValues ) * sizeof( double ) ) );
 		if (blockSize < 1)
 		{
 #ifdef DEBUG
@@ -391,7 +392,7 @@ __host__ void bifurcation1DIC(
 #endif
 		}
 
-		blockSize = blockSize > 1024 ? 1024 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
+		blockSize = blockSize > 512 ? 512: blockSize;		// Не превышаем ограничение в 1024 потока в блоке
 
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;	// Расчет размера сетки ( формула является аналогом ceil() )
 
@@ -644,7 +645,7 @@ __host__ void bifurcation2D(
 		// --- Одному потоку в блоке требуется (amountOfInitialConditions + amountOfValues) * sizeof(double) байт ---
 		// --- Производим расчет, какое максимальное количество потоков в блоке мы можем обечпечить ---
 		// --- Учитваем, что в блоке не может быть больше 1024 потоков ---
-		blockSize = ceil((1024.0f * 48.0f) / ((amountOfInitialConditions + amountOfValues) * sizeof(double)));
+		blockSize = ceil((1024.0f * 32.0f) / ((amountOfInitialConditions + amountOfValues) * sizeof(double)));
 		if (blockSize < 1)
 		{
 #ifdef DEBUG
@@ -653,7 +654,7 @@ __host__ void bifurcation2D(
 #endif
 		}
 
-		blockSize = blockSize > 1024 ? 1024 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
+		blockSize = blockSize > 512 ? 512 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
 
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;	// Расчет размера сетки ( формула является аналогом ceil() )
 
@@ -939,7 +940,7 @@ __host__ void bifurcation2DIC(
 		// --- Одному потоку в блоке требуется (amountOfInitialConditions + amountOfValues) * sizeof(double) байт ---
 		// --- Производим расчет, какое максимальное количество потоков в блоке мы можем обечпечить ---
 		// --- Учитваем, что в блоке не может быть больше 1024 потоков ---
-		blockSize = ceil((1024.0f * 48.0f) / ((amountOfInitialConditions + amountOfValues) * sizeof(double)));
+		blockSize = ceil((1024.0f * 32.0f) / ((amountOfInitialConditions + amountOfValues) * sizeof(double)));
 		if (blockSize < 1)
 		{
 #ifdef DEBUG
@@ -948,7 +949,7 @@ __host__ void bifurcation2DIC(
 #endif
 		}
 
-		blockSize = blockSize > 1024 ? 1024 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
+		blockSize = blockSize > 512 ? 512 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
 
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;	// Расчет размера сетки ( формула является аналогом ceil() )
 
@@ -1097,102 +1098,187 @@ __host__ void bifurcation2DIC(
 
 
 __host__ void LLE1D(
-	const double tMax,
-	const double NT,
-	const int nPts,
-	const double h,
-	const double eps,
-	const double* initialConditions,
-	const int amountOfInitialConditions,
-	const double* ranges,
-	const int* indicesOfMutVars,
-	const int writableVar,
-	const double maxValue,
-	const double transientTime,
-	const double* values,
-	const int amountOfValues)
+	const double	tMax,								// Время моделирования системы
+	const double	NT,									// Время нормализации
+	const int		nPts,								// Разрешение диаграммы
+	const double	h,									// Шаг интегрирования
+	const double	eps,								// Эпсилон для LLE
+	const double*	initialConditions,					// Массив с начальными условиями
+	const int		amountOfInitialConditions,			// Количество начальных условий ( уравнений в системе )
+	const double*	ranges,								// Диапазоны изменения параметров
+	const int*		indicesOfMutVars,					// Индексы изменяемых параметров
+	const int		writableVar,						// Индекс уравнения, по которому будем строить диаграмму
+	const double	maxValue,							// Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double	transientTime,						// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,								// Параметры
+	const int		amountOfValues)						// Количество параметров
 {
+	// --- Количество точек, которое будет смоделировано одной системой во время нормализации NT ---
 	size_t amountOfNT_points = NT / h;
+
+	// --- Количество точек, которое будет смоделировано одной системой с одним набором параметров ---
 	int amountOfPointsInBlock = tMax / NT;
+
+	// --- Количество точек, которое будет пропущено при моделировании системы ---
+	// --- (amountOfPointsForSkip первых смоделированных точек не будет учитываться в расчетах) ---
 	int amountOfPointsForSkip = transientTime / h;
 
-	size_t freeMemory;
-	size_t totalMemory;
+	size_t freeMemory;																// Переменная для хранения свободного объема памяти в GPU
+	size_t totalMemory;																// Переменная для хранения общего объема памяти в GPU
 
-	gpuErrorCheck(cudaMemGetInfo(&freeMemory, &totalMemory));
+	gpuErrorCheck(cudaMemGetInfo(&freeMemory, &totalMemory));						// Получаем свободный и общий объемы памяти GPU
 
-	freeMemory /= 4;
+	freeMemory *= 0.5;																// Ограничитель памяти (будем занимать лишь часть доступной GPU памяти)
+
+	// --- Расчет количества систем, которые мы сможем промоделировать параллельно в один момент времени ---
+	// TODO Сделать расчет требуемой памяти
 	size_t nPtsLimiter = freeMemory / (sizeof(double) * amountOfPointsInBlock);
 
-	nPtsLimiter = nPtsLimiter > nPts ? nPts : nPtsLimiter;
+	nPtsLimiter = nPtsLimiter > nPts ? nPts : nPtsLimiter;	// Если мы можем расчитать больше систем, чем требуется, то ставим ограничитель на максимум (nPts)
 
-	size_t originalNPtsLimiter = nPtsLimiter;
+	size_t originalNPtsLimiter = nPtsLimiter;				// Запоминаем исходное значение nPts для дальнейших расчетов ( getValueByIdx )
+
+	// ----------------------------------------------------------
+	// --- Выделяем память для хранения конечного результата  ---
+	// ----------------------------------------------------------
 
 	double* h_lleResult = new double[nPtsLimiter];
 
-	double* d_ranges;
-	int* d_indicesOfMutVars;
-	double* d_initialConditions;
-	double* d_values;
+	// -----------------------------------------
+	// --- Указатели на области памяти в GPU ---
+	// -----------------------------------------
 
-	double* d_lleResult;
+	double* d_ranges;				   // Указатель на массив с диапазоном изменения переменной
+	int*	d_indicesOfMutVars;		   // Указатель на массив с индексом изменяемой переменной в массиве values
+	double* d_initialConditions;	   // Указатель на массив с начальными условиями
+	double* d_values;				   // Указатель на массив с параметрами
 
-	gpuErrorCheck(cudaMalloc((void**)&d_ranges, 2 * sizeof(double)));
-	gpuErrorCheck(cudaMalloc((void**)&d_indicesOfMutVars, 1 * sizeof(int)));
-	gpuErrorCheck(cudaMalloc((void**)&d_initialConditions, amountOfInitialConditions * sizeof(double)));
-	gpuErrorCheck(cudaMalloc((void**)&d_values, amountOfValues * sizeof(double)));
+	double* d_lleResult;			   // Память для хранения конечного результата
 
-	gpuErrorCheck(cudaMalloc((void**)&d_lleResult, nPtsLimiter * sizeof(double)));
+	// -----------------------------------------
 
-	gpuErrorCheck(cudaMemcpy(d_ranges, ranges, 2 * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
-	gpuErrorCheck(cudaMemcpy(d_indicesOfMutVars, indicesOfMutVars, 1 * sizeof(int), cudaMemcpyKind::cudaMemcpyHostToDevice));
-	gpuErrorCheck(cudaMemcpy(d_initialConditions, initialConditions, amountOfInitialConditions * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
-	gpuErrorCheck(cudaMemcpy(d_values, values, amountOfValues * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
+	// -----------------------------
+	// --- Выделяем память в GPU ---
+	// -----------------------------
 
+	gpuErrorCheck( cudaMalloc( ( void** )&d_ranges,				2 * sizeof( double ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_indicesOfMutVars,	1 * sizeof( int ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_initialConditions,	amountOfInitialConditions * sizeof( double ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_values,				amountOfValues * sizeof( double ) ) );
+					 		  	 
+	gpuErrorCheck( cudaMalloc( ( void** )&d_lleResult,			nPtsLimiter * sizeof(double)));
+			
+	// -----------------------------
 
+	// ---------------------------------------------------------
+	// --- Копируем начальные входные параметры в память GPU ---
+	// ---------------------------------------------------------
+
+	gpuErrorCheck( cudaMemcpy( d_ranges,			ranges,				2 * sizeof( double ),							cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+	gpuErrorCheck( cudaMemcpy( d_indicesOfMutVars,	indicesOfMutVars,	1 * sizeof( int ),								cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+	gpuErrorCheck( cudaMemcpy( d_initialConditions, initialConditions,	amountOfInitialConditions * sizeof( double ),	cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+	gpuErrorCheck( cudaMemcpy( d_values,			values,				amountOfValues * sizeof( double ),				cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+
+	// ---------------------------------------------------------
+
+	// --- Расчет количества итераций для генерации бифуркационной диаграммы ---
 	size_t amountOfIteration = (size_t)ceilf((double)nPts / (double)nPtsLimiter);
+
+	// ------------------------------------------------------
+	// --- Открытие выходного текстового файла для записи ---
+	// ------------------------------------------------------
 
 	std::ofstream outFileStream;
 	outFileStream.open(OUT_FILE_PATH);
 
+	// ------------------------------------------------------
+
 #ifdef DEBUG
-	printf("LS1D\n");
+	printf("LLE 1D\n");
 	printf("nPtsLimiter : %zu\n", nPtsLimiter);
 	printf("Amount of iterations %zu: \n", amountOfIteration);
 #endif
 
+	// --- Основной цикл, который выполняет amountOfIteration расчетов для наборов размером nPtsLimiter систем ---
 	for (int i = 0; i < amountOfIteration; ++i)
 	{
+		// --- Если мы на последней итерации, требуется подкорректировать nPtsLimiter и сделать его равным ---
+		// --- оставшемуся нерасчитанному куску ---
 		if (i == amountOfIteration - 1)
 			nPtsLimiter = nPts - (nPtsLimiter * i);
 
-		int blockSizeMin;
-		int blockSizeMax;
-		int blockSize;
-		int minGridSize;
-		int gridSize;
+		//int blockSizeMin;
+		//int blockSizeMax;
+		int blockSize;		// Переменная для хранения размера блока
+		int minGridSize;	// Переменная для хранения минимального размера сетки
+		int gridSize;		// Переменная для хранения сетки
 
-		//cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, calculateDiscreteModelCUDA, 0, nPtsLimiter);
-		//gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+		//blockSizeMax = 48000 / ((3 * amountOfInitialConditions + amountOfValues) * sizeof(double));
+		//blockSizeMin = (3 + amountOfValues) * sizeof(double);
+		//blockSize = (blockSizeMax + blockSizeMin) / 2;
+		blockSize = ceil( ( 1024.0f * 32.0f ) / ( ( 3 * amountOfInitialConditions + amountOfValues ) * sizeof( double ) ) );
 
-		blockSizeMax = 48000 / ((3 * amountOfInitialConditions + amountOfValues) * sizeof(double));
-		blockSizeMin = (3 + amountOfValues) * sizeof(double);
-		blockSize = (blockSizeMax + blockSizeMin) / 2;
-		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+		if (blockSize < 1)
+		{
+#ifdef DEBUG
+			printf("Error : BlockSize < 1; %d line\n", __LINE__);
+			exit(1);
+#endif
+		}
 
-		LLEKernelCUDA << < gridSize, blockSize, (3 * amountOfInitialConditions + amountOfValues) * sizeof(double) * blockSize >> > (
-			nPts, nPtsLimiter, NT, tMax, amountOfPointsInBlock,
-			i * originalNPtsLimiter, amountOfPointsForSkip,
-			1, d_ranges, h, eps, d_indicesOfMutVars, d_initialConditions,
-			amountOfInitialConditions, d_values, amountOfValues, 
-			tMax / NT, 1, writableVar,
-			maxValue, d_lleResult);
+		blockSize = blockSize > 512 ? 512 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
 
+		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;	// Расчет размера сетки ( формула является аналогом ceil() )
+
+
+		// ------------------------------------
+		// --- CUDA функция для расчета LLE ---
+		// ------------------------------------
+
+		LLEKernelCUDA << < gridSize, blockSize, (3 * amountOfInitialConditions + amountOfValues) * sizeof(double) * blockSize >> > 
+			(	nPts,								// Общее разрешение
+				nPtsLimiter, 						// Разрешение в текущем расчете
+				NT, 								// Время нормализации
+				tMax, 								// Время моделирования
+				amountOfPointsInBlock,				// Количество точек, занимаемое одной системой в "data"
+				i * originalNPtsLimiter, 			// Количество уже посчитанных точек
+				amountOfPointsForSkip,				// Количество точек, которое будет промоделированно до основного расчета (transientTime)
+				1, 									// Размерность
+				d_ranges, 							// Массив, содержащий диапазоны перебираемого параметра
+				h, 									// Шаг интегрирования
+				eps, 								// Эпсилон
+				d_indicesOfMutVars, 				// Индексы изменяемых параметров
+				d_initialConditions,				// Начальные условия
+				amountOfInitialConditions, 			// Количество начальных условий
+				d_values, 							// Параметры
+				amountOfValues, 					// Количество параметров
+				tMax / NT, 							// Количество итерация (вычисляется от tMax)
+				1, 									// Множитель для ускорения расчетов
+				writableVar,						// Индекс переменной в x[] по которому строим диаграмму
+				maxValue, 							// Макксимальное значение переменной при моделировании
+				d_lleResult);						// Результирующий массив
+
+		// ------------------------------------
+
+		// --- Проверка на CUDA ошибки ---
 		gpuGlobalErrorCheck();
 
+		// --- Ждем пока все потоки завершат свою работу ---
 		gpuErrorCheck(cudaDeviceSynchronize());
 
+
+		// -------------------------------------------------------------------------------------
+		// --- Копирование значений пиков и их количества из памяти GPU в оперативную память ---
+		// -------------------------------------------------------------------------------------
+
 		gpuErrorCheck(cudaMemcpy(h_lleResult, d_lleResult, nPtsLimiter * sizeof(double), cudaMemcpyKind::cudaMemcpyDeviceToHost));
+
+		// -------------------------------------------------------------------------------------
+
+		// --- Точность чисел с плавающей запятой ---
+		outFileStream << std::setprecision(12);
+
+		// --- Сохранение данных в файл ---
 
 		for (size_t k = 0; k < nPtsLimiter; ++k)
 			if (outFileStream.is_open())
@@ -1210,6 +1296,10 @@ __host__ void LLE1D(
 		printf("Progress: %f\%\n", (100.0f / (double)amountOfIteration) * (i + 1));
 #endif
 	}
+
+	// ---------------------------
+	// --- Освобождение памяти ---
+	// ---------------------------
 
 	gpuErrorCheck(cudaFree(d_ranges));
 	gpuErrorCheck(cudaFree(d_indicesOfMutVars));
@@ -1239,87 +1329,172 @@ __host__ void LLE1DIC(
 	const double* values,
 	const int amountOfValues)
 {
+	// --- Количество точек, которое будет смоделировано одной системой во время нормализации NT ---
 	size_t amountOfNT_points = NT / h;
+
+	// --- Количество точек, которое будет смоделировано одной системой с одним набором параметров ---
 	int amountOfPointsInBlock = tMax / NT;
+
+	// --- Количество точек, которое будет пропущено при моделировании системы ---
+	// --- (amountOfPointsForSkip первых смоделированных точек не будет учитываться в расчетах) ---
 	int amountOfPointsForSkip = transientTime / h;
 
-	size_t freeMemory;
-	size_t totalMemory;
+	size_t freeMemory;																// Переменная для хранения свободного объема памяти в GPU
+	size_t totalMemory;																// Переменная для хранения общего объема памяти в GPU
 
-	gpuErrorCheck(cudaMemGetInfo(&freeMemory, &totalMemory));
+	gpuErrorCheck(cudaMemGetInfo(&freeMemory, &totalMemory));						// Получаем свободный и общий объемы памяти GPU
 
-	freeMemory /= 4;
+	freeMemory *= 0.5;																// Ограничитель памяти (будем занимать лишь часть доступной GPU памяти)
+
+	// --- Расчет количества систем, которые мы сможем промоделировать параллельно в один момент времени ---
+	// TODO Сделать расчет требуемой памяти
 	size_t nPtsLimiter = freeMemory / (sizeof(double) * amountOfPointsInBlock);
 
-	nPtsLimiter = nPtsLimiter > nPts ? nPts : nPtsLimiter;
+	nPtsLimiter = nPtsLimiter > nPts ? nPts : nPtsLimiter;	// Если мы можем расчитать больше систем, чем требуется, то ставим ограничитель на максимум (nPts)
 
-	size_t originalNPtsLimiter = nPtsLimiter;
+	size_t originalNPtsLimiter = nPtsLimiter;				// Запоминаем исходное значение nPts для дальнейших расчетов ( getValueByIdx )
+
+	// ----------------------------------------------------------
+	// --- Выделяем память для хранения конечного результата  ---
+	// ----------------------------------------------------------
 
 	double* h_lleResult = new double[nPtsLimiter];
 
-	double* d_ranges;
-	int* d_indicesOfMutVars;
-	double* d_initialConditions;
-	double* d_values;
+	// -----------------------------------------
+	// --- Указатели на области памяти в GPU ---
+	// -----------------------------------------
 
-	double* d_lleResult;
+	double* d_ranges;				   // Указатель на массив с диапазоном изменения переменной
+	int*	d_indicesOfMutVars;		   // Указатель на массив с индексом изменяемой переменной в массиве values
+	double* d_initialConditions;	   // Указатель на массив с начальными условиями
+	double* d_values;				   // Указатель на массив с параметрами
 
-	gpuErrorCheck(cudaMalloc((void**)&d_ranges, 2 * sizeof(double)));
-	gpuErrorCheck(cudaMalloc((void**)&d_indicesOfMutVars, 1 * sizeof(int)));
-	gpuErrorCheck(cudaMalloc((void**)&d_initialConditions, amountOfInitialConditions * sizeof(double)));
-	gpuErrorCheck(cudaMalloc((void**)&d_values, amountOfValues * sizeof(double)));
+	double* d_lleResult;			   // Память для хранения конечного результата
 
-	gpuErrorCheck(cudaMalloc((void**)&d_lleResult, nPtsLimiter * sizeof(double)));
+	// -----------------------------------------
 
-	gpuErrorCheck(cudaMemcpy(d_ranges, ranges, 2 * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
-	gpuErrorCheck(cudaMemcpy(d_indicesOfMutVars, indicesOfMutVars, 1 * sizeof(int), cudaMemcpyKind::cudaMemcpyHostToDevice));
-	gpuErrorCheck(cudaMemcpy(d_initialConditions, initialConditions, amountOfInitialConditions * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
-	gpuErrorCheck(cudaMemcpy(d_values, values, amountOfValues * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
+	// -----------------------------
+	// --- Выделяем память в GPU ---
+	// -----------------------------
 
+	gpuErrorCheck( cudaMalloc( ( void** )&d_ranges,				2 * sizeof( double ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_indicesOfMutVars,	1 * sizeof( int ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_initialConditions,	amountOfInitialConditions * sizeof( double ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_values,				amountOfValues * sizeof( double ) ) );
+					 		  	 
+	gpuErrorCheck( cudaMalloc( ( void** )&d_lleResult,			nPtsLimiter * sizeof(double)));
+			
+	// -----------------------------
 
+	// ---------------------------------------------------------
+	// --- Копируем начальные входные параметры в память GPU ---
+	// ---------------------------------------------------------
+
+	gpuErrorCheck( cudaMemcpy( d_ranges,			ranges,				2 * sizeof( double ),							cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+	gpuErrorCheck( cudaMemcpy( d_indicesOfMutVars,	indicesOfMutVars,	1 * sizeof( int ),								cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+	gpuErrorCheck( cudaMemcpy( d_initialConditions, initialConditions,	amountOfInitialConditions * sizeof( double ),	cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+	gpuErrorCheck( cudaMemcpy( d_values,			values,				amountOfValues * sizeof( double ),				cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+
+	// ---------------------------------------------------------
+
+	// --- Расчет количества итераций для генерации бифуркационной диаграммы ---
 	size_t amountOfIteration = (size_t)ceilf((double)nPts / (double)nPtsLimiter);
+
+	// ------------------------------------------------------
+	// --- Открытие выходного текстового файла для записи ---
+	// ------------------------------------------------------
 
 	std::ofstream outFileStream;
 	outFileStream.open(OUT_FILE_PATH);
 
+	// ------------------------------------------------------
+
 #ifdef DEBUG
-	printf("LLE1D\n");
+	printf("LLE 1DIC\n");
 	printf("nPtsLimiter : %zu\n", nPtsLimiter);
 	printf("Amount of iterations %zu: \n", amountOfIteration);
 #endif
 
+	// --- Основной цикл, который выполняет amountOfIteration расчетов для наборов размером nPtsLimiter систем ---
 	for (int i = 0; i < amountOfIteration; ++i)
 	{
+		// --- Если мы на последней итерации, требуется подкорректировать nPtsLimiter и сделать его равным ---
+		// --- оставшемуся нерасчитанному куску ---
 		if (i == amountOfIteration - 1)
 			nPtsLimiter = nPts - (nPtsLimiter * i);
 
-		int blockSizeMin;
-		int blockSizeMax;
-		int blockSize;
-		int minGridSize;
-		int gridSize;
+		//int blockSizeMin;
+		//int blockSizeMax;
+		int blockSize;		// Переменная для хранения размера блока
+		int minGridSize;	// Переменная для хранения минимального размера сетки
+		int gridSize;		// Переменная для хранения сетки
 
-		//cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, calculateDiscreteModelCUDA, 0, nPtsLimiter);
-		//gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+		//blockSizeMax = 48000 / ((3 * amountOfInitialConditions + amountOfValues) * sizeof(double));
+		//blockSizeMin = (3 + amountOfValues) * sizeof(double);
+		//blockSize = (blockSizeMax + blockSizeMin) / 2;
+		blockSize = ceil( ( 1024.0f * 32.0f ) / ( ( 3 * amountOfInitialConditions + amountOfValues ) * sizeof( double ) ) );
 
-		blockSizeMax = 48000 / ((3 * amountOfInitialConditions + amountOfValues) * sizeof(double));
-		blockSizeMin = (3 + amountOfValues) * sizeof(double);
-		blockSize = (blockSizeMax + blockSizeMin) / 2;
-		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
+		if (blockSize < 1)
+		{
+#ifdef DEBUG
+			printf("Error : BlockSize < 1; %d line\n", __LINE__);
+			exit(1);
+#endif
+		}
 
-		LLEKernelICCUDA << < gridSize, blockSize, (3 * amountOfInitialConditions + amountOfValues) * sizeof(double)* blockSize >> > (
-			nPts, nPtsLimiter, NT, tMax, amountOfPointsInBlock,
-			i * originalNPtsLimiter, amountOfPointsForSkip,
-			1, d_ranges, h, eps, d_indicesOfMutVars, d_initialConditions,
-			amountOfInitialConditions, d_values, amountOfValues,
-			tMax / NT, 1, writableVar,
-			maxValue, d_lleResult);
+		blockSize = blockSize > 512 ? 512 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
 
+		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;	// Расчет размера сетки ( формула является аналогом ceil() )
+
+
+		// ------------------------------------
+		// --- CUDA функция для расчета LLE ---
+		// ------------------------------------
+
+		LLEKernelICCUDA << < gridSize, blockSize, (3 * amountOfInitialConditions + amountOfValues) * sizeof(double) * blockSize >> > 
+			(	nPts,								// Общее разрешение
+				nPtsLimiter, 						// Разрешение в текущем расчете
+				NT, 								// Время нормализации
+				tMax, 								// Время моделирования
+				amountOfPointsInBlock,				// Количество точек, занимаемое одной системой в "data"
+				i * originalNPtsLimiter, 			// Количество уже посчитанных точек
+				amountOfPointsForSkip,				// Количество точек, которое будет промоделированно до основного расчета (transientTime)
+				1, 									// Размерность
+				d_ranges, 							// Массив, содержащий диапазоны перебираемого параметра
+				h, 									// Шаг интегрирования
+				eps, 								// Эпсилон
+				d_indicesOfMutVars, 				// Индексы изменяемых параметров
+				d_initialConditions,				// Начальные условия
+				amountOfInitialConditions, 			// Количество начальных условий
+				d_values, 							// Параметры
+				amountOfValues, 					// Количество параметров
+				tMax / NT, 							// Количество итерация (вычисляется от tMax)
+				1, 									// Множитель для ускорения расчетов
+				writableVar,						// Индекс переменной в x[] по которому строим диаграмму
+				maxValue, 							// Макксимальное значение переменной при моделировании
+				d_lleResult);						// Результирующий массив
+
+		// ------------------------------------
+
+		// --- Проверка на CUDA ошибки ---
 		gpuGlobalErrorCheck();
 
+		// --- Ждем пока все потоки завершат свою работу ---
 		gpuErrorCheck(cudaDeviceSynchronize());
 
+
+		// -------------------------------------------------------------------------------------
+		// --- Копирование значений пиков и их количества из памяти GPU в оперативную память ---
+		// -------------------------------------------------------------------------------------
+
 		gpuErrorCheck(cudaMemcpy(h_lleResult, d_lleResult, nPtsLimiter * sizeof(double), cudaMemcpyKind::cudaMemcpyDeviceToHost));
+
+		// -------------------------------------------------------------------------------------
+
+		// --- Точность чисел с плавающей запятой ---
+		outFileStream << std::setprecision(12);
+
+		// --- Сохранение данных в файл ---
 
 		for (size_t k = 0; k < nPtsLimiter; ++k)
 			if (outFileStream.is_open())
@@ -1337,6 +1512,10 @@ __host__ void LLE1DIC(
 		printf("Progress: %f\%\n", (100.0f / (double)amountOfIteration) * (i + 1));
 #endif
 	}
+
+	// ---------------------------
+	// --- Освобождение памяти ---
+	// ---------------------------
 
 	gpuErrorCheck(cudaFree(d_ranges));
 	gpuErrorCheck(cudaFree(d_indicesOfMutVars));
@@ -1438,7 +1617,7 @@ __host__ void LLE2D(
 		//cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, LLEKernelCUDA, 0, nPtsLimiter);
 		//gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
 
-		blockSizeMax = 48000 / ((3 * amountOfInitialConditions + amountOfValues) * sizeof(double));
+		blockSizeMax = 32000 / ((3 * amountOfInitialConditions + amountOfValues) * sizeof(double));
 		blockSizeMin = (3 + amountOfValues) * sizeof(double);
 		blockSize = (blockSizeMax + blockSizeMin) / 2;
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
@@ -1707,7 +1886,7 @@ __host__ void LS1D(
 		//cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, calculateDiscreteModelCUDA, 0, nPtsLimiter);
 		//gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
 
-		blockSizeMax = 48000 / ((3 * amountOfInitialConditions + 2 * amountOfInitialConditions * amountOfInitialConditions + amountOfValues) * sizeof(double));
+		blockSizeMax = 32000 / ((3 * amountOfInitialConditions + 2 * amountOfInitialConditions * amountOfInitialConditions + amountOfValues) * sizeof(double));
 		//blockSizeMin = (3 + amountOfValues) * sizeof(double);
 		blockSize = blockSizeMax;// (blockSizeMax + blockSizeMin) / 2;
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
@@ -1854,7 +2033,7 @@ __host__ void LS2D(
 		//cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, calculateDiscreteModelCUDA, 0, nPtsLimiter);
 		//gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
 
-		blockSizeMax = 48000 / ((3 * amountOfInitialConditions + 2 * amountOfInitialConditions * amountOfInitialConditions + amountOfValues) * sizeof(double));
+		blockSizeMax = 32000 / ((3 * amountOfInitialConditions + 2 * amountOfInitialConditions * amountOfInitialConditions + amountOfValues) * sizeof(double));
 		//blockSizeMin = (3 + amountOfValues) * sizeof(double);
 		blockSize = blockSizeMax;// (blockSizeMax + blockSizeMin) / 2;
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;

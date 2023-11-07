@@ -554,28 +554,31 @@ __global__ void dbscanCUDA(double* data, const int sizeOfBlock, const int amount
 
 
 
+// --------------------
+// --- ядро дл€ LLE ---
+// --------------------
 __global__ void LLEKernelCUDA(
-	const int nPts,
-	const int nPtsLimiter,
-	const double NT,
-	const double tMax,
-	const int sizeOfBlock,
-	const int amountOfCalculatedPoints,
-	const int amountOfPointsForSkip,
-	const int dimension,
-	double* ranges,
-	const double h,
-	const double eps,
-	int* indicesOfMutVars,
-	double* initialConditions,
-	const int amountOfInitialConditions,
-	const double* values,
-	const int amountOfValues,
-	const int amountOfIterations,
-	const int preScaller,
-	const int writableVar,
-	const double maxValue,
-	double* resultArray)
+	const int		nPts,
+	const int		nPtsLimiter,
+	const double	NT,
+	const double	tMax,
+	const int		sizeOfBlock,
+	const int		amountOfCalculatedPoints,
+	const int		amountOfPointsForSkip,
+	const int		dimension,
+	double*			ranges,
+	const double	h,
+	const double	eps,
+	int*			indicesOfMutVars,
+	double*			initialConditions,
+	const int		amountOfInitialConditions,
+	const double*	values,
+	const int		amountOfValues,
+	const int		amountOfIterations,
+	const int		preScaller,
+	const int		writableVar,
+	const double	maxValue,
+	double*			resultArray)
 {
 	extern __shared__ double s[];
 	double* x = s + threadIdx.x * amountOfInitialConditions;
@@ -590,15 +593,9 @@ __global__ void LLEKernelCUDA(
 	if (idx >= nPtsLimiter)
 		return;
 
-	//double* x = new double[amountOfInitialConditions];
-
 	for (int i = 0; i < amountOfInitialConditions; ++i)
 		x[i] = initialConditions[i];
 
-	//double* y = new double[amountOfInitialConditions];
-	//double* z = new double[amountOfInitialConditions];
-
-	//double* localValues = new double[amountOfValues];
 	for (int i = 0; i < amountOfValues; ++i)
 		localValues[i] = values[i];
 
@@ -644,16 +641,11 @@ __global__ void LLEKernelCUDA(
 			1, 0, maxValue, nullptr, idx * sizeOfBlock);
 		if (!flag) { resultArray[idx] = 0; result;/* goto Error; */ }
 
-		//__syncthreads();
-
 		double tempData = 0;
 
 		for (int l = 0; l < amountOfInitialConditions; ++l)
 			tempData += (x[l] - y[l]) * (x[l] - y[l]);
 		tempData = sqrt(tempData) / eps;
-
-		//double temp = log(tempData);
-		//result += (temp == NAN ? 0 : temp);
 
 		result += log(tempData);
 		
@@ -666,39 +658,35 @@ __global__ void LLEKernelCUDA(
 	}
 
 	resultArray[idx] = result / tMax;
-
-//Error:
-//	delete[] localValues;
-//
-//	delete[] y;
-//	delete[] x;
-//	delete[] z;
 }
 
 
 
+// -------------------------
+// --- ядро дл€ LLE (IC) ---
+// -------------------------
 __global__ void LLEKernelICCUDA(
-	const int nPts,
-	const int nPtsLimiter,
-	const double NT,
-	const double tMax,
-	const int sizeOfBlock,
-	const int amountOfCalculatedPoints,
-	const int amountOfPointsForSkip,
-	const int dimension,
-	double* ranges,
-	const double h,
-	const double eps,
-	int* indicesOfMutVars,
-	double* initialConditions,
-	const int amountOfInitialConditions,
-	const double* values,
-	const int amountOfValues,
-	const int amountOfIterations,
-	const int preScaller,
-	const int writableVar,
-	const double maxValue,
-	double* resultArray)
+	const int		nPts,
+	const int		nPtsLimiter,
+	const double	NT,
+	const double	tMax,
+	const int		sizeOfBlock,
+	const int		amountOfCalculatedPoints,
+	const int		amountOfPointsForSkip,
+	const int		dimension,
+	double*			ranges,
+	const double	h,
+	const double	eps,
+	int*			indicesOfMutVars,
+	double*			initialConditions,
+	const int		amountOfInitialConditions,
+	const double*	values,
+	const int		amountOfValues,
+	const int		amountOfIterations,
+	const int		preScaller,
+	const int		writableVar,
+	const double	maxValue,
+	double*			resultArray)
 {
 	extern __shared__ double s[];
 	double* x = s + threadIdx.x * amountOfInitialConditions;
@@ -713,15 +701,9 @@ __global__ void LLEKernelICCUDA(
 	if (idx >= nPtsLimiter)
 		return;
 
-	//double* x = new double[amountOfInitialConditions];
-
 	for (int i = 0; i < amountOfInitialConditions; ++i)
 		x[i] = initialConditions[i];
 
-	//double* y = new double[amountOfInitialConditions];
-	//double* z = new double[amountOfInitialConditions];
-
-	//double* localValues = new double[amountOfValues];
 	for (int i = 0; i < amountOfValues; ++i)
 		localValues[i] = values[i];
 
@@ -734,7 +716,8 @@ __global__ void LLEKernelICCUDA(
 	double zPower = 0;
 	for (int i = 0; i < amountOfInitialConditions; ++i)
 	{
-		z[i] = sinf(0.2171828 * (i + 1) + idx + (0.2171828 + i * idx)) * 0.5;//0.5 * (sinf(idx * (i * idx + 1) + 1));	// 0.2171828 change to z[i] = rand(0, 1) - 0.5;
+		// z[i] = sinf(0.2171828 * (i + 1) + idx + (0.2171828 + i * idx)) * 0.5;
+		z[i] = 0.5 * (sinf(idx * (i * idx + 1) + 1));
 		zPower += z[i] * z[i];
 	}
 
@@ -767,16 +750,11 @@ __global__ void LLEKernelICCUDA(
 			1, 0, maxValue, nullptr, idx * sizeOfBlock);
 		if (!flag) { resultArray[idx] = 0; result;/* goto Error; */ }
 
-		//__syncthreads();
-
 		double tempData = 0;
 
 		for (int l = 0; l < amountOfInitialConditions; ++l)
 			tempData += (x[l] - y[l]) * (x[l] - y[l]);
 		tempData = sqrt(tempData) / eps;
-
-		//double temp = log(tempData);
-		//result += (temp == NAN ? 0 : temp);
 
 		result += log(tempData);
 
@@ -789,13 +767,6 @@ __global__ void LLEKernelICCUDA(
 	}
 
 	resultArray[idx] = result / tMax;
-
-	//Error:
-	//	delete[] localValues;
-	//
-	//	delete[] y;
-	//	delete[] x;
-	//	delete[] z;
 }
 
 
