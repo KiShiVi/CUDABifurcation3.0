@@ -2,8 +2,8 @@
 #include "hostLibrary.cuh"
 
 // --- Путь для сохранения результирующих файлов ---
-//#define OUT_FILE_PATH "C:\\Users\\KiShiVi\\Desktop\\mat.csv"
-#define OUT_FILE_PATH "C:\\CUDA\\mat.csv"
+#define OUT_FILE_PATH "C:\\Users\\KiShiVi\\Desktop\\mat.csv"
+//#define OUT_FILE_PATH "C:\\CUDA\\mat.csv"
 
 // --- Директива, объявление которой выводит в консоль отладочные сообщения ---
 #define DEBUG
@@ -603,7 +603,7 @@ __host__ void bifurcation2D(
 	// ---------------------------------------------------------
 
 	// --- Расчет количества итераций для генерации бифуркационной диаграммы ---
-	size_t amountOfIteration = ( size_t )ceil( ( double )nPts / ( double )nPtsLimiter );
+	size_t amountOfIteration = ( size_t )ceil( ( double )( nPts * nPts ) / ( double )nPtsLimiter );
 
 	// ------------------------------------------------------
 	// --- Открытие выходного текстового файла для записи ---
@@ -662,6 +662,7 @@ __host__ void bifurcation2D(
 		// --- CUDA функция для расчета траектории систем ---
 		// --------------------------------------------------
 
+
 		calculateDiscreteModelCUDA << <gridSize, blockSize, (amountOfInitialConditions + amountOfValues) * sizeof(double)* blockSize >> >
 			(	nPts,						// Общее разрешение диаграммы - nPts
 				nPtsLimiter,				// Разрешение диаграммы, которое рассчитывается на данной итерации - nPtsLimiter
@@ -693,6 +694,7 @@ __host__ void bifurcation2D(
 
 		// --- Используем встроенную функцию CUDA, для нахождения оптимальных настреок блока и сетки ---
 		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, peakFinderCUDA, 0, nPtsLimiter);
+		blockSize = blockSize > 512 ? 512 : blockSize;			// Не превышаем ограничение в 512 потока в блоке
 		gridSize = (nPtsLimiter + blockSize - 1) / blockSize;
 
 		// -----------------------------------------
@@ -706,7 +708,7 @@ __host__ void bifurcation2D(
 				d_amountOfPeaks,			// Выходной массив, куда будут записаны количества пиков для каждой системы
 				d_data,						// Выходной массив, куда будут записаны значения пиков
 				d_intervals,				// Межпиковый интервал
-				h);							// Шаг интегрирования
+				h * preScaller);							// Шаг интегрирования
 
 		// -----------------------------------------
 
@@ -898,7 +900,7 @@ __host__ void bifurcation2DIC(
 	// ---------------------------------------------------------
 
 	// --- Расчет количества итераций для генерации бифуркационной диаграммы ---
-	size_t amountOfIteration = ( size_t )ceil( ( double )nPts / ( double )nPtsLimiter );
+	size_t amountOfIteration = ( size_t )ceil( ( double )( nPts * nPts ) / ( double )nPtsLimiter );
 
 	// ------------------------------------------------------
 	// --- Открытие выходного текстового файла для записи ---
@@ -1001,7 +1003,7 @@ __host__ void bifurcation2DIC(
 				d_amountOfPeaks,			// Выходной массив, куда будут записаны количества пиков для каждой системы
 				d_data,						// Выходной массив, куда будут записаны значения пиков
 				d_intervals,				// Межпиковый интервал
-				h);							// Шаг интегрирования
+				h * preScaller);							// Шаг интегрирования
 
 		// -----------------------------------------
 

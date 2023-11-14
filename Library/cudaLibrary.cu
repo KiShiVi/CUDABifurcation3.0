@@ -17,9 +17,40 @@ __device__ __host__ void calculateDiscreteModel(double* x, const double* a, cons
 	 * values[3] - C
 	 */
 
-	x[0] = x[0] + h * (-x[1] - x[2]);
-	x[1] = x[1] + h * (x[0] + a[0] * x[1]);
-	x[2] = x[2] + h * (a[1] + x[2] * (x[0] - a[2]));
+	//x[0] = x[0] + h * (-x[1] - x[2]);
+	//x[1] = x[1] + h * (x[0] + a[0] * x[1]);
+	//x[2] = x[2] + h * (a[1] + x[2] * (x[0] - a[2]));
+
+	double F1, F2, Iin, h1, h2, a4;
+	a4 = 2 / (4 + a[6] * a[3]);
+	//a[5] = ceil(a[5]);
+	h1 = h * a[0];
+	h2 = h * (1 - a[0]);
+
+	x[0] = x[0] + h1 * (x[3]);
+	x[1] = x[1] + h1 * (x[4]);
+	x[2] = x[2] + h1 * (x[5]);
+
+	Iin = a[10] * ((fmod(x[6] + a[13], a[11]) < a[12]) ? 1 : 0);
+	F1 = (a[1] + a[2] * a[3] * Iin);
+	F2 = (2 / a[6]) * (x[0] - x[1] - 2 * 3.14159265359 * (a[5]));
+
+	x[3] = x[3] + h1 * ((a4 / a[7]) * (F1 + F2 - a[3] * (x[0] + x[2])) - a[9] * x[3] - sin(x[0]));
+	x[4] = x[4] + h1 * ((a4 / a[7]) * (F1 - F2 - a[3] * (x[1] + x[2])) - a[9] * x[4] - sin(x[1]));
+	x[5] = x[5] + h1 * (a4 * (2 * F1 - a[3] * (x[0] + x[1] + 2 * x[2])) - a[9] * x[5] - sin(x[2]));
+	x[6] = x[6] + h1;
+
+
+	Iin = a[10] * ((fmod(x[6] + a[13], a[11]) < a[12]) ? 1 : 0);
+	F1 = (a[1] + a[2] * a[3] * Iin);
+	//x[7] = Iin;
+	x[6] = x[6] + h2;
+	x[5] = (x[5] + h2 * (a4 * (2 * F1 - a[3] * (x[0] + x[1] + 2 * x[2])) - sin(x[2]))) / (1 + h2 * a[9]);
+	x[4] = (x[4] + h2 * ((a4 / a[7]) * (F1 - F2 - a[3] * (x[1] + x[2])) - sin(x[1]))) / (1 + h2 * a[9]);
+	x[3] = (x[3] + h2 * ((a4 / a[7]) * (F1 + F2 - a[3] * (x[0] + x[2])) - sin(x[0]))) / (1 + h2 * a[9]);
+	x[2] = x[2] + h2 * (x[5]);
+	x[1] = x[1] + h2 * (x[4]);
+	x[0] = x[0] + h2 * (x[3]);
 }
 
 
@@ -234,7 +265,7 @@ __device__ __host__ int peakFinder(double* data, const int startDataIndex,
 						outPeaks[startDataIndex + amountOfPeaks] = data[j];
 					// --- ≈сли массик timeOfPeaks не пуст, то делаем запись ---
 					if ( timeOfPeaks != nullptr )
-						timeOfPeaks[startDataIndex + amountOfPeaks] = trunc( ( j + i ) / 2 );	// ¬ыбираем индекс посередине между j и i
+						timeOfPeaks[startDataIndex + amountOfPeaks] = trunc( ( (double)j + (double)i ) / (double)2 );	// ¬ыбираем индекс посередине между j и i
 					++amountOfPeaks;
 					i = j + 1; // ѕотому что следующа€ точка точно не может быть пиком ( два пика не могут идти подр€д )
 					break;
