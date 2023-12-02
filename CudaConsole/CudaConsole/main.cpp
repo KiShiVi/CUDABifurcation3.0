@@ -276,25 +276,37 @@ int main()
 	//	20,												 		// const double in_kdeSamplesInterval2,
 	//	0.05);											 		// const double in_kdeSamplesSmooth);
 
-double params[14]{ 1, 1, 6, 0.5, 0, 2, 8, 1, 1, 2, 1, 120, 20, 60 };
-double init[7]{ 0,0,0,0,0,0,0 };
-
-bifurcation2D(
-	360, // const double tMax,
-	200, // const int nPts,
-	0.01, // const double h,
-	sizeof(init) / sizeof(double), // const int amountOfInitialConditions,
-	init, // const double* initialConditions,
-	new double[4] { 0, 10, 0, 5 }, // const double* ranges,
-	new int[2] { 5, 7 }, // const int* indicesOfMutVars,
-	4, // const int writableVar,
-	100000000, // const double maxValue,
-	360, // const double transientTime,
-	params, // const double* values,
-	sizeof(params) / sizeof(double), // const int amountOfValues,
-	1, // const int preScaller,
-	0.01 //eps
+distributedSystemSimulation(
+	5,
+	0.0000025,
+	0.0000025,
+	3,
+	new double[3] {-7.916612245245, 3.879975700790, 0.015070375542},
+	0,
+	0,
+	new double[3] {0.2, 0.2, 5.7},
+	3
 );
+
+//double params[14]{ 1, 1, 6, 0.5, 0, 2, 8, 1, 1, 2, 1, 120, 20, 60 };
+//double init[7]{ 0,0,0,0,0,0,0 };
+
+//bifurcation2D(
+//	360, // const double tMax,
+//	200, // const int nPts,
+//	0.01, // const double h,
+//	sizeof(init) / sizeof(double), // const int amountOfInitialConditions,
+//	init, // const double* initialConditions,
+//	new double[4] { 0, 10, 0, 5 }, // const double* ranges,
+//	new int[2] { 5, 7 }, // const int* indicesOfMutVars,
+//	4, // const int writableVar,
+//	100000000, // const double maxValue,
+//	360, // const double transientTime,
+//	params, // const double* values,
+//	sizeof(params) / sizeof(double), // const int amountOfValues,
+//	1, // const int preScaller,
+//	0.01 //eps
+//);
 
 	//bifurcation1D(									
 	//	100,													// const double tMax,

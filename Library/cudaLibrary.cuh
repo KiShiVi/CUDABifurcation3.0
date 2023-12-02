@@ -47,6 +47,36 @@ __device__ __host__ bool loopCalculateDiscreteModel(double* x, const double* val
 
 
 /**
+ * Глобальная функция, которая распределенно вычисляет траекторию одной систем
+ *
+ * \param amountOfThreads			- 
+ * \param h							- Шаг интегрирования
+ * \param hSpecial					- 
+ * \param initialConditions			- Начальные условия
+ * \param amountOfInitialConditions - Количество начальных условий
+ * \param values					- Параметры
+ * \param amountOfValues			- Количество параметров
+ * \param amountOfIterations		- Количество итераций ( равно количеству точек для одной системы )
+ * \param writableVar				- Индекс уравнения, по которому будем строить диаграмму
+ * \param data						- Массив, где будет хранится траектория систем
+ * \return -
+ */
+__global__ void distributedCalculateDiscreteModelCUDA(
+	const int		amountOfPointsForSkip,
+	const int		amountOfThreads,
+	const double	h,
+	const double	hSpecial,
+	double*			initialConditions,
+	const int		amountOfInitialConditions,
+	const double*	values,
+	const int		amountOfValues,
+	const int		amountOfIterations,
+	const int		writableVar = 0,
+	double*			data = nullptr);
+
+
+
+/**
  * Глобальная функция, которая вычисляет траекторию нескольких систем
  * 
  * \param nPts						- Общее разрешение диаграммы - nPts

@@ -8,6 +8,155 @@
 // --- Директива, объявление которой выводит в консоль отладочные сообщения ---
 #define DEBUG
 
+
+__host__ void distributedSystemSimulation(
+	const double	tMax,							// Время моделирования системы
+	const double	h,								// Шаг интегрирования
+	const double	hSpecial,						// Шаг смещения между потоками
+	const int		amountOfInitialConditions,		// Количество начальных условий ( уравнений в системе )
+	const double*	initialConditions,				// Массив с начальными условиями
+	const int		writableVar,					// Индекс уравнения, по которому будем строить диаграмму
+	const double	transientTime,					// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,							// Параметры
+	const int		amountOfValues)					// Количество параметров	
+{
+	// --- Количество точек, которое будет смоделировано одной системой с одним набором параметров ---
+	int amountOfPointsInBlock = tMax / h;
+
+	int amountOfThreads = hSpecial / h;
+
+	// --- Количество точек, которое будет пропущено при моделировании системы ---
+	// --- (amountOfPointsForSkip первых смоделированных точек не будет учитываться в расчетах) ---
+	int amountOfPointsForSkip = transientTime / h;
+
+	size_t freeMemory;											// Переменная для хранения свободного объема памяти в GPU
+	size_t totalMemory;											// Переменная для хранения общего объема памяти в GPU
+
+	gpuErrorCheck(cudaMemGetInfo(&freeMemory, &totalMemory));	// Получаем свободный и общий объемы памяти GPU
+
+	freeMemory *= 0.8;											// Ограничитель памяти (будем занимать лишь часть доступной GPU памяти)	
+
+	// ---------------------------------------------------------------------------------------------------
+	// --- Выделяем память для хранения конечного результата (пики и их количество для каждой системы) ---
+	// ---------------------------------------------------------------------------------------------------
+
+	double* h_data = new double[amountOfPointsInBlock * sizeof(double)];
+
+	// -----------------------------------------
+	// --- Указатели на области памяти в GPU ---
+	// -----------------------------------------
+
+	double* d_data;					// Указатель на массив в памяти GPU для хранения траектории системы
+	double* d_initialConditions;	// Указатель на массив с начальными условиями
+	double* d_values;				// Указатель на массив с параметрами
+
+	// -----------------------------------------
+
+	// -----------------------------
+	// --- Выделяем память в GPU ---
+	// -----------------------------
+
+	gpuErrorCheck( cudaMalloc( ( void** )&d_data,				amountOfPointsInBlock * sizeof( double ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_initialConditions,	amountOfInitialConditions * sizeof( double ) ) );
+	gpuErrorCheck( cudaMalloc( ( void** )&d_values,				amountOfValues * sizeof( double ) ) );
+	
+	// -----------------------------
+
+	// ---------------------------------------------------------
+	// --- Копируем начальные входные параметры в память GPU ---
+	// ---------------------------------------------------------
+
+	gpuErrorCheck( cudaMemcpy( d_initialConditions, initialConditions,	amountOfInitialConditions * sizeof(double), cudaMemcpyKind::cudaMemcpyHostToDevice));
+	gpuErrorCheck( cudaMemcpy( d_values,			values,				amountOfValues * sizeof(double),			cudaMemcpyKind::cudaMemcpyHostToDevice));
+
+	// ---------------------------------------------------------
+
+	// ------------------------------------------------------
+	// --- Открытие выходного текстового файла для записи ---
+	// ------------------------------------------------------
+
+	std::ofstream outFileStream;
+	outFileStream.open(OUT_FILE_PATH);
+
+	// ------------------------------------------------------
+
+#ifdef DEBUG
+	printf("Distributed System Simulation\n");
+#endif
+
+		int blockSize;			// Переменная для хранения размера блока
+		int minGridSize;		// Переменная для хранения минимального размера сетки
+		int gridSize;			// Переменная для хранения сетки
+
+		// --- Считаем, что один блок не может использовать больше чем 48КБ памяти ---
+		// --- Одному потоку в блоке требуется (amountOfInitialConditions + amountOfValues) * sizeof(double) байт ---
+		// --- Производим расчет, какое максимальное количество потоков в блоке мы можем обечпечить ---
+		// --- Учитваем, что в блоке не может быть больше 1024 потоков ---
+		blockSize = ceil( ( 1024.0f * 8.0f ) / ( ( amountOfInitialConditions + amountOfValues ) * sizeof( double ) ) );
+		if (blockSize < 1)
+		{
+#ifdef DEBUG
+			printf("Error : BlockSize < 1; %d line\n", __LINE__);
+			exit(1);
+#endif
+		}
+
+		blockSize = blockSize > 512 ? 512 : blockSize;		// Не превышаем ограничение в 1024 потока в блоке
+
+		gridSize = (amountOfThreads + blockSize - 1) / blockSize;	// Расчет размера сетки ( формула является аналогом ceil() )
+
+		distributedCalculateDiscreteModelCUDA << <gridSize, blockSize, (amountOfInitialConditions + amountOfValues) * sizeof(double)* blockSize >> >
+			(
+				amountOfPointsForSkip,
+				amountOfThreads,
+				h,
+				hSpecial,
+				d_initialConditions,
+				amountOfInitialConditions,
+				d_values,
+				amountOfValues,
+				tMax / hSpecial,
+				writableVar,
+				d_data
+				);
+
+		// --- Проверка на CUDA ошибки ---
+		gpuGlobalErrorCheck();
+
+		// --- Ждем пока все потоки завершат свою работу ---
+		gpuErrorCheck(cudaDeviceSynchronize());
+
+		// -------------------------------------------------------------------------------------
+		// --- Копирование значений пиков и их количества из памяти GPU в оперативную память ---
+		// -------------------------------------------------------------------------------------
+
+		gpuErrorCheck(cudaMemcpy(h_data, d_data, amountOfPointsInBlock * sizeof(double), cudaMemcpyKind::cudaMemcpyDeviceToHost));
+
+		// -------------------------------------------------------------------------------------
+
+		// --- Точность чисел с плавающей запятой ---
+		outFileStream << std::setprecision(20);
+
+		for (size_t j = 0; j < amountOfPointsInBlock; ++j)
+			if (outFileStream.is_open())
+			{
+				outFileStream << h * j << ", " << h_data[j] << '\n';
+			}
+			else
+			{
+				printf("\nOutput file open error\n");
+				exit(1);
+			}
+
+
+		gpuErrorCheck(cudaFree(d_data));
+		gpuErrorCheck(cudaFree(d_initialConditions));
+		gpuErrorCheck(cudaFree(d_values));
+
+		delete[] h_data;
+}
+
+
 // ----------------------------------------------------------------------------
 // --- Определение функции, для расчета одномерной бифуркационной диаграммы ---
 // ----------------------------------------------------------------------------

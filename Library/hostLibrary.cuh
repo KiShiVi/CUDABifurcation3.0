@@ -27,6 +27,23 @@
 // -----------------------------
 
 
+
+/**
+ * Функция, для расчета одномерной бифуркационной диаграммы.
+ */
+__host__ void distributedSystemSimulation(
+	const double	tMax,							// Время моделирования системы
+	const double	h,								// Шаг интегрирования
+	const double	hSpecial,						// Шаг смещения между потоками
+	const int		amountOfInitialConditions,		// Количество начальных условий ( уравнений в системе )
+	const double*	initialConditions,				// Массив с начальными условиями
+	const int		writableVar,					// Индекс уравнения, по которому будем строить диаграмму
+	const double	transientTime,					// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,							// Параметры
+	const int		amountOfValues);				// Количество параметров				
+
+
+
 /**
  * Функция, для расчета одномерной бифуркационной диаграммы.
  */
