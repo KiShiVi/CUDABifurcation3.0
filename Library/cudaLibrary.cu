@@ -17,6 +17,15 @@ __device__ __host__ void calculateDiscreteModel(double* x, const double* a, cons
 	 * values[3] - C
 	 */
 
+	double h1 = h * a[0];
+	double h2 = h * (1 - a[0]);
+	x[0] = x[0] + h1 * (-x[1] - x[2]);
+	x[1] = (x[1] + h1 * (x[0])) / (1 - a[1] * h1);
+	x[2] = (x[2] + h1 * a[2]) / (1 - h1 * (x[0] - a[3]));
+	x[2] = x[2] + h2 * (a[2] + x[2] * (x[0] - a[3]));
+	x[1] = x[1] + h2 * (x[0] + a[1] * x[1]);
+	x[0] = x[0] + h2 * (-x[1] - x[2]);
+
 	//x[0] = x[0] + h * (-x[1] - x[2]);
 	//x[1] = x[1] + h * (x[0] + a[0] * x[1]);
 	//x[2] = x[2] + h * (a[1] + x[2] * (x[0] - a[2]));
@@ -335,37 +344,37 @@ __device__ __host__ void calculateDiscreteModel(double* x, const double* a, cons
 	//z[1] = x[1] + h * (B[1][0] * k21 + B[1][1] * k22 + B[1][2] * k23 + B[1][3] * k24 + B[1][4] * k25 + B[1][5] * k26 + B[1][6] * k27 + B[1][7] * k28 + B[1][8] * k29 + B[1][9] * k2A0 + B[1][10] * k2A1 + B[1][11] * k2A2 + B[1][12] * k2A3);
 	//z[2] = x[2] + h * (B[1][0] * k31 + B[1][1] * k32 + B[1][2] * k33 + B[1][3] * k34 + B[1][4] * k35 + B[1][5] * k36 + B[1][6] * k37 + B[1][7] * k38 + B[1][8] * k39 + B[1][9] * k3A0 + B[1][10] * k3A1 + B[1][11] * k3A2 + B[1][12] * k3A3);
 
-	int i;
-	double h1;
-	double b[17];
-	b[0] = 0.1302024830889;
-	b[1] = 0.5611629817751;
-	b[2] = -0.3894749626448;
-	b[3] = 0.1588419065552;
-	b[4] = -0.3959038941332;
-	b[5] = 0.1845396409783;
-	b[6] = 0.2583743876863;
-	b[7] = 0.2950117236093;
-	b[8] = -0.60550853383;
-	b[9] = 0.2950117236093;
-	b[10] = 0.2583743876863;
-	b[11] = 0.1845396409783;
-	b[12] = -0.3959038941332;
-	b[13] = 0.1588419065552;
-	b[14] = -0.3894749626448;
-	b[15] = 0.5611629817751;
-	b[16] = 0.1302024830889;
+	//int i;
+	//double h1;
+	//double b[17];
+	//b[0] = 0.1302024830889;
+	//b[1] = 0.5611629817751;
+	//b[2] = -0.3894749626448;
+	//b[3] = 0.1588419065552;
+	//b[4] = -0.3959038941332;
+	//b[5] = 0.1845396409783;
+	//b[6] = 0.2583743876863;
+	//b[7] = 0.2950117236093;
+	//b[8] = -0.60550853383;
+	//b[9] = 0.2950117236093;
+	//b[10] = 0.2583743876863;
+	//b[11] = 0.1845396409783;
+	//b[12] = -0.3959038941332;
+	//b[13] = 0.1588419065552;
+	//b[14] = -0.3894749626448;
+	//b[15] = 0.5611629817751;
+	//b[16] = 0.1302024830889;
 
-	for (i = 0; i < 17; ++i)
-	{
-		h1 = h * 0.5 * b[i];
-		x[0] = x[0] + h1 * (-x[1] - x[2]);
-		x[1] = (x[1] + h1 * x[0]) / (1 - a[0] * h1);
-		x[2] = (x[2] + h1 * a[1]) / (1 - h1 * (x[0] - a[2]));
-		x[2] = x[2] + h1 * (a[1] + x[2] * (x[0] - a[2]));
-		x[1] = x[1] + h1 * (x[0] + a[0] * x[1]);
-		x[0] = x[0] + h1 * (-x[1] - x[2]);
-	}
+	//for (i = 0; i < 17; ++i)
+	//{
+	//	h1 = h * 0.5 * b[i];
+	//	x[0] = x[0] + h1 * (-x[1] - x[2]);
+	//	x[1] = (x[1] + h1 * x[0]) / (1 - a[0] * h1);
+	//	x[2] = (x[2] + h1 * a[1]) / (1 - h1 * (x[0] - a[2]));
+	//	x[2] = x[2] + h1 * (a[1] + x[2] * (x[0] - a[2]));
+	//	x[1] = x[1] + h1 * (x[0] + a[0] * x[1]);
+	//	x[0] = x[0] + h1 * (-x[1] - x[2]);
+	//}
 
 }
 
@@ -516,6 +525,73 @@ __global__ void calculateDiscreteModelCUDA(
 
 
 
+__global__ void calculateDiscreteModelCUDA_H(
+	const int		nPts,
+	const int		nPtsLimiter,
+	const int		sizeOfBlock,
+	const int		amountOfCalculatedPoints,
+	const double	transientTime,
+	const int		dimension,
+	double*			ranges,
+	double*			initialConditions,
+	const int		amountOfInitialConditions,
+	const double*	values,
+	const int		amountOfValues,
+	const double	tMax,
+	const int		preScaller,
+	const int		writableVar,
+	const double	maxValue,
+	double*			data,
+	int*			maxValueCheckerArray)
+{
+	// --- Общая память в рамках одного блока ---
+	// --- Строение памяти: ---
+	// --- {localX_0, localX_1, localX_2, ..., localValues_0, localValues_1, ..., следуюший поток...} ---
+	extern __shared__ double s[];
+
+	// --- В каждом потоке создаем указатель на параметры и переменные, чтобы работать с ними как с массивами ---
+	double* localX = s + (threadIdx.x * amountOfInitialConditions);
+	double* localValues = s + (blockDim.x * amountOfInitialConditions) + (threadIdx.x * amountOfValues);
+
+	// --- Вычисляем индекс потока, в котором находимся в даный момент ---
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx >= nPtsLimiter)		// Если существует поток с большим индексом, чем требуется - сразу завершаем его
+		return;
+
+	// --- Определяем localX[] начальными условиями ---
+	for (int i = 0; i < amountOfInitialConditions; ++i)
+		localX[i] = initialConditions[i];
+
+	// --- Определяем localValues[] начальными параметрами ---
+	for (int i = 0; i < amountOfValues; ++i)
+		localValues[i] = values[i];
+
+	//// --- Меняем значение изменяемых параметров на результат функции getValueByIdx ---
+	//for (int i = 0; i < dimension; ++i)
+	//	localValues[indicesOfMutVars[i]] = getValueByIdx(amountOfCalculatedPoints + idx,
+	//		nPts, ranges[i * 2], ranges[i * 2 + 1], i);
+
+	double h = pow(10, getValueByIdxLog(amountOfCalculatedPoints + idx, nPts, ranges[0], ranges[1], 0));
+
+	// --- Прогоняем систему amountOfPointsForSkip раз ( для отработки transientTime ) --- 
+	loopCalculateDiscreteModel(localX, localValues, h, transientTime / h,
+		1, 0, 0, nullptr, idx * sizeOfBlock);
+
+	// --- Теперь уже по-взрослому моделируем систему --- 
+	bool flag = loopCalculateDiscreteModel(localX, localValues, h, tMax / h / preScaller,
+		preScaller, writableVar, maxValue, data, idx * sizeOfBlock);
+
+	// --- Если функция моделирования выдала false - значит мы даже не будем смотреть на эту систему в дальнейшем анализе ---
+	if (!flag && maxValueCheckerArray != nullptr)
+		maxValueCheckerArray[idx] = -1;
+	else
+		maxValueCheckerArray[idx] = tMax / h / preScaller;
+
+	return;
+}
+
+
+
 __global__ void calculateDiscreteModelICCUDA(
 	const int		nPts, 
 	const int		nPtsLimiter, 
@@ -586,6 +662,16 @@ __device__ __host__ double getValueByIdx(const int idx, const int nPts,
 {
 	return startRange + ( ( ( int )( ( int )idx / powf( ( double )nPts, ( double )valueNumber) ) % nPts )
 		* ( ( double )( finishRange - startRange ) / ( double )( nPts - 1 ) ) );
+}
+
+
+
+// --- Функция, которая находит индекс в последовательности значений ---
+__device__ __host__ double getValueByIdxLog(const int idx, const int nPts,
+	const double startRange, const double finishRange, const int valueNumber)
+{
+	return log10(startRange) + (((int)((int)idx / powf((double)nPts, (double)valueNumber)) % nPts)
+		* ((double)(log10(finishRange) - log10(startRange)) / (double)(nPts - 1)));
 }
 
 
@@ -677,6 +763,27 @@ __global__ void peakFinderCUDA(double* data, const int sizeOfBlock, const int am
 
 	
 	amountOfPeaks[idx] = peakFinder( data, idx * sizeOfBlock, sizeOfBlock, outPeaks, timeOfPeaks, h );
+	return;
+}
+
+
+
+__global__ void peakFinderCUDA_H(double* data, const int sizeOfBlock, const int amountOfBlocks,
+	int* amountOfPeaks, double* outPeaks, double* timeOfPeaks, double h)
+{
+	// --- Вычисляем индекс потока, в котором находимся в даный момент ---
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx >= amountOfBlocks)		// Если существует поток с большим индексом, чем требуется - сразу завершаем его
+		return;
+
+	// --- Если на предыдущих этапах систему уже отметили как "непригодную", то пропускаем ее ---
+	if (amountOfPeaks[idx] == -1)
+	{
+		amountOfPeaks[idx] = 0;
+		return;
+	}
+
+	amountOfPeaks[idx] = peakFinder(data, idx * sizeOfBlock, amountOfPeaks[idx], outPeaks, timeOfPeaks, h);
 	return;
 }
 

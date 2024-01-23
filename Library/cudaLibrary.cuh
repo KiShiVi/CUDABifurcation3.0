@@ -126,6 +126,53 @@ __global__ void calculateDiscreteModelCUDA(
 
 
 /**
+ * Глобальная функция, которая вычисляет траекторию нескольких систем по шагу
+ *
+ * \param nPts						- Общее разрешение диаграммы - nPts
+ * \param nPtsLimiter				- Разрешение диаграммы, которое рассчитывается на данной итерации - nPtsLimiter
+ * \param sizeOfBlock				- Количество точек в одной системе ( tMax / h / preScaller )
+ * \param amountOfCalculatedPoints	- Количество уже посчитанных точек систем
+ * \param transientTime				- Время пропуска ( transientTime )
+ * \param dimension					- Размерность ( диаграмма одномерная )
+ * \param ranges					- Массив с диапазонами
+ * \param h							- Шаг интегрирования
+ * \param indicesOfMutVars			- Индексы изменяемых параметров
+ * \param initialConditions			- Начальные условия
+ * \param amountOfInitialConditions - Количество начальных условий
+ * \param values					- Параметры
+ * \param amountOfValues			- Количество параметров
+ * \param amountOfIterations		- Количество итераций ( равно количеству точек для одной системы )
+ * \param preScaller				- Множитель, который уменьшает время и объем расчетов
+ * \param writableVar				- Индекс уравнения, по которому будем строить диаграмму
+ * \param maxValue					- Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+ * \param data						- Массив, где будет хранится траектория систем
+ * \param maxValueCheckerArray		- Вспомогательный массив, куда при возникновении ошибки будет записано '-1' в соостветсвующую систему
+ * \return -
+ */
+__global__ void calculateDiscreteModelCUDA_H(
+	const int		nPts,
+	const int		nPtsLimiter,
+	const int		sizeOfBlock,
+	const int		amountOfCalculatedPoints,
+	const double	transientTime,
+	const int		dimension,
+	double*			ranges,
+	double*			initialConditions,
+	const int		amountOfInitialConditions,
+	const double*	values,
+	const int		amountOfValues,
+	const double	amountOfIterations,
+	const int		preScaller = 0,
+	const int		writableVar = 0,
+	const double	maxValue = 0,
+	double* data = nullptr,
+	int* maxValueCheckerArray = nullptr);
+
+// --------------------------------------------------------------------------
+
+
+
+/**
  * Глобальная функция, которая вычисляет траекторию нескольких систем (по начальным условиям)
  *
  * \param nPts						- Общее разрешение диаграммы - nPts
@@ -197,6 +244,21 @@ __device__ __host__ double getValueByIdx(const int idx, const int nPts,
 
 
 /**
+ * Функция, которая находит индекс в последовательности значений по логарифмической шкале
+ *
+ * \param idx			- Текущий idx в потоке
+ * \param nPts			- Количество точек для разбиения диапазона (разрешение)
+ * \param startRange	- Левая граница диапазона
+ * \param finishRange	- Правая граница диапазона
+ * \param valueNumber	- Номер требуемой переменной
+ * \return Value		- Результат
+ */
+__device__ __host__ double getValueByIdxLog(const int idx, const int nPts,
+	const double startRange, const double finishRange, const int valueNumber);
+
+
+
+/**
  * Находит пики в интервале [startDataIndex; startDataIndex + amountOfPoints] в "data" массиве
  * Результат записывается в outPeaks и timeOfPeaks ( если outPeaks != nullptr и timeOfPeaks != nullptr )
  * 
@@ -227,6 +289,23 @@ __device__ __host__ int peakFinder(double* data, const int startDataIndex, const
  */
 __global__ void peakFinderCUDA( double* data, const int sizeOfBlock, const int amountOfBlocks,
 	int* amountOfPeaks = nullptr, double* outPeaks = nullptr, double* timeOfPeaks = nullptr, double h = 0 );
+
+
+
+/**
+ * Нахождение пиков в "data" массиве в многопоточном режиме
+ * Результат записывается в "outPeaks", "timeOfPeaks" и "amountOfPeaks" ( если outPeaks != nullptr и timeOfPeaks != nullptr и amountOfPeaks != nullptr )
+ *
+ * \param data				- Данные
+ * \param sizeOfBlock		- Количество точек для одной системы ( tmax / h / preScaller )
+ * \param amountOfBlocks	- Количество блоков ( систем ) в массиве "data"
+ * \param amountOfPeaks		- Выходной массив, содержащий количество пиков для каждого блока ( системы )
+ * \param outPeaks			- Выходной массив, содержащий fамплитуды найденных пиков
+ * \param timeOfPeaks		- Выходной массив, содержащий межпиковые интервалы найденных пиков
+ * \param h					- Шаг интегрирования ( для вычисления межпикового интервала )
+ */
+__global__ void peakFinderCUDA_H(double* data, const int sizeOfBlock, const int amountOfBlocks,
+	int* amountOfPeaks = nullptr, double* outPeaks = nullptr, double* timeOfPeaks = nullptr, double h = 0);
 
 
 

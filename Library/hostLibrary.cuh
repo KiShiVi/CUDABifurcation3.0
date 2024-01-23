@@ -65,6 +65,24 @@ __host__ void bifurcation1D(
 
 
 /**
+ * Функция, для расчета одномерной бифуркационной диаграммы по шагу.
+ */
+__host__ void bifurcation1DForH(
+	const double	tMax,							// Время моделирования системы
+	const int		nPts,							// Разрешение диаграммы
+	const int		amountOfInitialConditions,		// Количество начальных условий ( уравнений в системе )
+	const double*	initialConditions,				// Массив с начальными условиями
+	const double*	ranges,							// Диапазон изменения шага
+	const int		writableVar,					// Индекс уравнения, по которому будем строить диаграмму
+	const double	maxValue,						// Максимальное значение (по модулю), выше которого система считаемся "расшедшейся"
+	const double	transientTime,					// Время, которое будет промоделировано перед расчетом диаграммы
+	const double*	values,							// Параметры
+	const int		amountOfValues,					// Количество параметров
+	const int		preScaller);					// Множитель, который уменьшает время и объем расчетов (будет рассчитываться только каждая 'preScaller' точка)
+
+
+
+/**
  * Функция, для расчета одномерной бифуркационной диаграммы. (По начальным условиям)
  */
 __host__ void bifurcation1DIC(

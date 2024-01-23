@@ -1,2 +1,2 @@
 [WarpWatch]
-Expressions=idx, x[idx], localValues[idx], z[idx], result[i], k * amountOfInitialConditions + l, b
+Expressions=data[idx], data[idx + 300]
