@@ -39,7 +39,7 @@ __device__ __host__ void calculateDiscreteModel(double* x, const double* values,
  * \return						- Возаращет true, если ошибок не произошло
  */
 __device__ __host__ bool loopCalculateDiscreteModel(double* x, const double* values, 
-	const double h, const int amountOfIterations, const int preScaller=0, 
+	const double h, const int amountOfIterations, const int amountOfX, const int preScaller=0,
 	const int writableVar = 0, const double maxValue = 0,
 	double* data = nullptr, const int startDataIndex = 0, 
 	const int writeStep = 1);

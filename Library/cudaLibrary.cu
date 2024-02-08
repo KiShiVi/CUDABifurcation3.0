@@ -385,13 +385,18 @@ __device__ __host__ void calculateDiscreteModel(double* x, const double* a, cons
 // -----------------------------------------------------------------------------------------------------
 
 __device__ __host__ bool loopCalculateDiscreteModel(double* x, const double* values, 
-	const double h, const int amountOfIterations, const int preScaller, 
+	const double h, const int amountOfIterations, const int amountOfX, const int preScaller,
 	int writableVar, const double maxValue, double* data, 
 	const int startDataIndex, const int writeStep)
 {
+	double* xPrev = new double[amountOfX];
 	// --- Глобальный цикл, который производит вычисления заданные amountOfIterations раз ---
 	for ( int i = 0; i < amountOfIterations; ++i )
 	{
+		for (int j = 0; j < amountOfX; ++j)
+		{
+			xPrev[j] = x[j];
+		}
 		// --- Если все-таки передали массив для записи - записываем значение переменной ---
 		if ( data != nullptr )
 			data[startDataIndex + i * writeStep] = x[writableVar];
@@ -402,13 +407,40 @@ __device__ __host__ bool loopCalculateDiscreteModel(double* x, const double* val
 
 		// --- Если isnan или isinf - возвращаем false, ибо это нежелательное поведение системы ---
 		if ( isnan( x[writableVar] ) || isinf( x[writableVar] ) )
+		{
+			delete[] xPrev;
 			return false;
+		}
 
 		// --- Если maxValue == 0, это значит пользователь не выставил ограничение, иначе требуется его проверить ---
 		if ( maxValue != 0 )
 			if ( fabsf( x[writableVar] ) > maxValue )
+			{
+				delete[] xPrev;
 				return false;
+			}
 	}
+
+	// --- Проверка на сваливание в точку ---
+	double tempResult = 0;
+	for (int j = 0; j < amountOfX; ++j)
+	{
+		tempResult += ((x[j] - xPrev[j]) * (x[j] - xPrev[j]));
+	}
+
+	if (tempResult == 0)
+	{
+		delete[] xPrev;
+		return false;
+	}
+
+	if (sqrt(tempResult) < 1e-12)
+	{
+		delete[] xPrev;
+		return false;
+	}
+
+	delete[] xPrev;
 	return true;
 }
 
@@ -443,13 +475,13 @@ __global__ void distributedCalculateDiscreteModelCUDA(
 
 	// --- Прогоняем систему amountOfPointsForSkip раз ( для отработки transientTime ) --- 
 	loopCalculateDiscreteModel(localX, localValues, h, amountOfPointsForSkip,
-		1, 0, 0, nullptr, 0);
+		amountOfInitialConditions, 1, 0, 0, nullptr, 0);
 
 	loopCalculateDiscreteModel(localX, localValues, h, idx,
-		1, 0, 0, nullptr, 0, 0);
+		amountOfInitialConditions, 1, 0, 0, nullptr, 0, 0);
 
 	loopCalculateDiscreteModel(localX, localValues, hSpecial, amountOfIterations,
-		1, writableVar, 0, data, idx, amountOfThreads);
+		amountOfInitialConditions, 1, writableVar, 0, data, idx, amountOfThreads);
 
 	return;
 }
@@ -510,11 +542,11 @@ __global__ void calculateDiscreteModelCUDA(
 
 	// --- Прогоняем систему amountOfPointsForSkip раз ( для отработки transientTime ) --- 
 	loopCalculateDiscreteModel(localX, localValues, h, amountOfPointsForSkip,
-		1, 0, 0, nullptr, idx * sizeOfBlock);
+		1, amountOfInitialConditions, 0, 0, nullptr, idx * sizeOfBlock);
 
 	// --- Теперь уже по-взрослому моделируем систему --- 
 	bool flag = loopCalculateDiscreteModel(localX, localValues, h, amountOfIterations,
-		preScaller, writableVar, maxValue, data, idx * sizeOfBlock);
+		amountOfInitialConditions, preScaller, writableVar, maxValue, data, idx * sizeOfBlock);
 
 	// --- Если функция моделирования выдала false - значит мы даже не будем смотреть на эту систему в дальнейшем анализе ---
 	if (!flag && maxValueCheckerArray != nullptr)
@@ -575,11 +607,11 @@ __global__ void calculateDiscreteModelCUDA_H(
 
 	// --- Прогоняем систему amountOfPointsForSkip раз ( для отработки transientTime ) --- 
 	loopCalculateDiscreteModel(localX, localValues, h, transientTime / h,
-		1, 0, 0, nullptr, idx * sizeOfBlock);
+		amountOfInitialConditions, 1, 0, 0, nullptr, idx * sizeOfBlock);
 
 	// --- Теперь уже по-взрослому моделируем систему --- 
 	bool flag = loopCalculateDiscreteModel(localX, localValues, h, tMax / h / preScaller,
-		preScaller, writableVar, maxValue, data, idx * sizeOfBlock);
+		amountOfInitialConditions, preScaller, writableVar, maxValue, data, idx * sizeOfBlock);
 
 	// --- Если функция моделирования выдала false - значит мы даже не будем смотреть на эту систему в дальнейшем анализе ---
 	if (!flag && maxValueCheckerArray != nullptr)
@@ -642,11 +674,11 @@ __global__ void calculateDiscreteModelICCUDA(
 
 	// --- Прогоняем систему amountOfPointsForSkip раз ( для отработки transientTime ) --- 
 	loopCalculateDiscreteModel(localX, localValues, h, amountOfPointsForSkip,
-		1, 0, 0, nullptr, idx * sizeOfBlock);
+		amountOfInitialConditions, 1, 0, 0, nullptr, idx * sizeOfBlock);
 
 	// --- Теперь уже по-взрослому моделируем систему --- 
 	bool flag = loopCalculateDiscreteModel(localX, localValues, h, amountOfIterations,
-		preScaller, writableVar, maxValue, data, idx * sizeOfBlock);
+		amountOfInitialConditions, preScaller, writableVar, maxValue, data, idx * sizeOfBlock);
 
 	// --- Если функция моделирования выдала false - значит мы даже не будем смотреть на эту систему в дальнейшем анализе ---
 	if (!flag && maxValueCheckerArray != nullptr)
@@ -1117,7 +1149,7 @@ __global__ void LLEKernelCUDA(
 
 
 	loopCalculateDiscreteModel(x, localValues, h, amountOfPointsForSkip,
-		1, 0, maxValue, nullptr, idx * sizeOfBlock);
+		amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 
 	//Calculating
 
@@ -1130,11 +1162,11 @@ __global__ void LLEKernelCUDA(
 	for (int i = 0; i < sizeOfBlock; ++i)
 	{
 		bool flag = loopCalculateDiscreteModel(x, localValues, h, amountOfNTPoints,
-			1, 0, maxValue, nullptr, idx * sizeOfBlock);
+			amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 		if (!flag) { resultArray[idx] = 0; result;/* goto Error;*/ }
 
 		flag = loopCalculateDiscreteModel(y, localValues, h, amountOfNTPoints,
-			1, 0, maxValue, nullptr, idx * sizeOfBlock);
+			amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 		if (!flag) { resultArray[idx] = 0; result;/* goto Error; */ }
 
 		double tempData = 0;
@@ -1226,7 +1258,7 @@ __global__ void LLEKernelICCUDA(
 
 
 	loopCalculateDiscreteModel(x, localValues, h, amountOfPointsForSkip,
-		1, 0, maxValue, nullptr, idx * sizeOfBlock);
+		amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 
 	//Calculating
 
@@ -1239,11 +1271,11 @@ __global__ void LLEKernelICCUDA(
 	for (int i = 0; i < sizeOfBlock; ++i)
 	{
 		bool flag = loopCalculateDiscreteModel(x, localValues, h, amountOfNTPoints,
-			1, 0, maxValue, nullptr, idx * sizeOfBlock);
+			amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 		if (!flag) { resultArray[idx] = 0; result;/* goto Error;*/ }
 
 		flag = loopCalculateDiscreteModel(y, localValues, h, amountOfNTPoints,
-			1, 0, maxValue, nullptr, idx * sizeOfBlock);
+			amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 		if (!flag) { resultArray[idx] = 0; result;/* goto Error; */ }
 
 		double tempData = 0;
@@ -1399,7 +1431,7 @@ __global__ void LSKernelCUDA(
 
 
 	loopCalculateDiscreteModel(x, localValues, h, amountOfPointsForSkip,
-		1, 0, maxValue, nullptr, idx * sizeOfBlock);
+		amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 
 	//Calculating
 
@@ -1419,13 +1451,13 @@ __global__ void LSKernelCUDA(
 	for (int i = 0; i < sizeOfBlock; ++i)
 	{
 		bool flag = loopCalculateDiscreteModel(x, localValues, h, amountOfNTPoints,
-			1, 0, maxValue, nullptr, idx * sizeOfBlock);
+			amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 		if (!flag) { for (int m = 0; m < amountOfInitialConditions; ++m ) resultArray[idx * amountOfInitialConditions + m] = 0;/* goto Error;*/ }
 
 		for (int j = 0; j < amountOfInitialConditions; ++j)
 		{
 			flag = loopCalculateDiscreteModel(y + j * amountOfInitialConditions, localValues, h, amountOfNTPoints,
-				1, 0, maxValue, nullptr, idx * sizeOfBlock);
+				amountOfInitialConditions, 1, 0, maxValue, nullptr, idx * sizeOfBlock);
 			if (!flag) { for (int m = 0; m < amountOfInitialConditions; ++m) resultArray[idx * amountOfInitialConditions + m] = 0;/* goto Error; */ }
 		}
 
